@@ -277,9 +277,14 @@ with tab_signalen:
 with tab_net:
     st.markdown("Live transportcapaciteit van het elektriciteitsnet per "
                 "**voedingsgebied** (netvlak rond een onderstation). "
-                "Bron: capaciteitskaart Netbeheer Nederland.")
+                "**Afname** = stroom afnemen (verbruik) · **Teruglevering** = "
+                "terugleveren (bv. zon-op-dak). Bron: capaciteitskaart Netbeheer "
+                "Nederland.")
     st.caption("🟢 ruim · 🟡 beperkt · 🟠 in onderzoek (wachtrij) · 🔴 tekort "
                "(wachtrij). Wachtrij = openstaande aanvragen in MW.")
+    st.info("ℹ️ De koppeling gemeente ↔ voedingsgebied gebeurt op **naam** "
+            "(vereenvoudiging). Voor het exacte, geografische beeld — inclusief de "
+            "TenneT-hoogspanningslaag — is de officiële kaart leidend (knop onderaan).")
     netdata = _netcongestie(tuple(GEMEENTEN))
     for g in GEMEENTEN:
         st.subheader(g)
@@ -290,7 +295,7 @@ with tab_net:
         tabel_net = pd.DataFrame([{
             "Voedingsgebied": r["gebied"],
             "Afname": nc.label(r["afname"]),
-            "Opwek": nc.label(r["opwek"]),
+            "Teruglevering": nc.label(r["opwek"]),
             "Wachtrij afname (MW)": r["wachtrij_afname"],
             "Wachtrij invoeding (MW)": r["wachtrij_invoeding"],
             "Netbeheerder": r["rnb"],

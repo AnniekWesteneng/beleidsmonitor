@@ -209,3 +209,20 @@ stuurt optioneel een melding bij nieuwe sterke risico's.
 - De API-sleutel hoort in secrets, nooit in de code of op GitHub.
 - De online versie is een etalage; verzamelen gebeurt waar de pipeline draait.
 - Kadaster-eigendom en sommige geo-data zijn betaald of privacy-beperkt.
+
+---
+
+## Bekende verbeterpunten (betrouwbaarheid)
+
+De gebruikte bronnen zijn officieel/authoritatief; de aandachtspunten liggen in
+de verwerking aan onze kant:
+
+- **Netcongestie — geografische koppeling (later):** de koppeling gemeente ↔
+  voedingsgebied gebeurt nu op náám. Voor exacte overeenkomst met de officiële
+  kaart: koppelen op ligging (point-in-polygon) + de TenneT-hoogspanningslaag
+  meenemen.
+- **Raadsinformatie-dekking:** Open Raadsinformatie dekt niet alle gemeenten;
+  controleer welke ontbreken bij opschalen.
+- **Recall van de zoektermen:** trefwoord-zoeken mist documenten zonder die
+  woorden (zie As 2 — zoekdiepte).
+- **AI-classificatie:** steekproefsgewijs controleren tegen vakkennis.
