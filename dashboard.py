@@ -285,22 +285,29 @@ with tab_net:
     st.info("ℹ️ De koppeling gemeente ↔ voedingsgebied gebeurt op **naam** "
             "(vereenvoudiging). Voor het exacte, geografische beeld — inclusief de "
             "TenneT-hoogspanningslaag — is de officiële kaart leidend (knop onderaan).")
-    netdata = _netcongestie(tuple(GEMEENTEN))
-    for g in GEMEENTEN:
-        st.subheader(g)
-        rijen = netdata.get(g, [])
-        if not rijen:
-            st.write("Geen netgegevens gevonden voor deze gemeente.")
-            continue
-        tabel_net = pd.DataFrame([{
-            "Voedingsgebied": r["gebied"],
-            "Afname": nc.label(r["afname"]),
-            "Teruglevering": nc.label(r["opwek"]),
-            "Wachtrij afname (MW)": r["wachtrij_afname"],
-            "Wachtrij invoeding (MW)": r["wachtrij_invoeding"],
-            "Netbeheerder": r["rnb"],
-        } for r in rijen])
-        st.dataframe(tabel_net, hide_index=True, use_container_width=True)
+    # Beweeg mee met het gemeentefilter in de zijbalk (alleen geselecteerde
+    # gemeenten tonen) — voorkomt een eindeloze lijst bij veel gemeenten.
+    net_gemeenten = [g for g in GEMEENTEN if g in gem]
+    if not net_gemeenten:
+        st.warning("Selecteer in de zijbalk minstens één gemeente om de "
+                   "netstatus te zien.")
+    else:
+        netdata = _netcongestie(tuple(net_gemeenten))
+        for g in net_gemeenten:
+            st.subheader(g)
+            rijen = netdata.get(g, [])
+            if not rijen:
+                st.write("Geen netgegevens gevonden voor deze gemeente.")
+                continue
+            tabel_net = pd.DataFrame([{
+                "Voedingsgebied": r["gebied"],
+                "Afname": nc.label(r["afname"]),
+                "Teruglevering": nc.label(r["opwek"]),
+                "Wachtrij afname (MW)": r["wachtrij_afname"],
+                "Wachtrij invoeding (MW)": r["wachtrij_invoeding"],
+                "Netbeheerder": r["rnb"],
+            } for r in rijen])
+            st.dataframe(tabel_net, hide_index=True, use_container_width=True)
     st.link_button("Open de officiële capaciteitskaart", nc.KAART_URL)
 
 # ============================= TAB 2: CHAT ==================================
