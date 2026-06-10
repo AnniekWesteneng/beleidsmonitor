@@ -26,6 +26,8 @@ from config import VANAF_JAAR, INCLUSIEF_PROVINCIE  # noqa: E402
 
 SRU_ENDPOINT = "https://repository.overheid.nl/sru"
 BRON_NAAM = "Officiële Bekendmakingen"
+# Deze bron kan ook provinciaal beleid ophalen (provincies zijn geldige creators).
+ONDERSTEUNT_PROVINCIES = True
 HEADERS = {
     "User-Agent": "Beleidsmonitor-TodayDevelopment/0.1 (afstudeerproject; contact via Today Development)"
 }

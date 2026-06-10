@@ -13,7 +13,7 @@ Per bron/gemeente/zoekterm:
 
 Draaien:  python pipeline.py
 """
-from config import GEMEENTEN, ZOEKTERMEN
+from config import GEMEENTEN, ZOEKTERMEN, PROVINCIES
 from bronnen import officiele_bekendmakingen, open_raadsinformatie
 from classificeer import classificeer
 from database import init_db, sla_op, url_bestaat
@@ -22,13 +22,18 @@ from database import init_db, sla_op, url_bestaat
 BRONNEN = [officiele_bekendmakingen, open_raadsinformatie]
 
 
-def run(gemeenten=None, zoektermen=None, max_per_term: int = 10):
+def run(gemeenten=None, zoektermen=None, max_per_term: int = 10, provincies=None):
     gemeenten = gemeenten or GEMEENTEN
     zoektermen = zoektermen or ZOEKTERMEN
+    provincies = provincies if provincies is not None else PROVINCIES
     conn = init_db()
     nieuw = 0
     for bron in BRONNEN:
-        for gemeente in gemeenten:
+        # Gebieden = gemeenten, plus provincies als de bron dat ondersteunt.
+        gebieden = list(gemeenten)
+        if getattr(bron, "ONDERSTEUNT_PROVINCIES", False):
+            gebieden += list(provincies)
+        for gemeente in gebieden:
             for term in zoektermen:
                 print(f"[{bron.BRON_NAAM}] {gemeente} / {term}", flush=True)
                 docs = bron.haal(gemeente, term, max_resultaten=max_per_term)

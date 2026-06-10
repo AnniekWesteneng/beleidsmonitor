@@ -1,6 +1,11 @@
 # Begin klein: 3 casusgemeenten. Later: alle 342.
 GEMEENTEN = ["Den Haag", "Utrecht", "Almere"]
 
+# Provincies waarvan we ook het beleid meenemen (regionale programmering van
+# bedrijventerreinen). Hoort logisch bij de gekozen gemeenten. Breid mee uit als
+# je gemeenten toevoegt. Alleen de Officiële-Bekendmakingen-bron gebruikt deze.
+PROVINCIES = ["Zuid-Holland", "Utrecht", "Flevoland"]
+
 # De 10 beleidsindicatoren uit het onderzoek (bijlage 12/13)
 INDICATOREN = [
     {"id": 1, "naam": "Transformatiedruk op industriële bestemming", "classificatie": "contextafhankelijk"},

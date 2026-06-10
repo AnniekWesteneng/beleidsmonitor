@@ -16,7 +16,8 @@ import pandas as pd
 import streamlit as st
 
 from database import DB_PATH
-from config import INDICATOREN
+from config import INDICATOREN, GEMEENTEN
+from bronnen import netcongestie as nc
 
 
 def _secret(naam, default=None):
@@ -197,8 +198,8 @@ with st.sidebar:
             van, tot = dmin, dmax
 
     sorteer = st.selectbox("Sorteren op",
-                           ["Relevantie (hoog → laag)", "Datum (nieuw → oud)",
-                            "Gemeente (A → Z)"])
+                           ["Relevantie (hoog → laag)", "Relevantie (laag → hoog)",
+                            "Datum (nieuw → oud)", "Gemeente (A → Z)"])
 
 # --- Filteren ---
 mask = (
@@ -221,7 +222,14 @@ st.caption(f"{filtered['_doc'].nunique()} documenten · {len(filtered)} signalen
 
 kleuren = {"kans": "🟢", "risico": "🔴", "contextafhankelijk": "🟠"}
 
-tab_signalen, tab_chat = st.tabs(["📋 Signalen", "💬 Vraag de monitor"])
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def _netcongestie(gemeenten_tuple):
+    return nc.haal_netcongestie(list(gemeenten_tuple))
+
+
+tab_signalen, tab_net, tab_chat = st.tabs(
+    ["📋 Signalen", "🔌 Netcongestie", "💬 Vraag de monitor"])
 
 # =========================== TAB 1: SIGNALEN ================================
 with tab_signalen:
@@ -235,11 +243,13 @@ with tab_signalen:
             gemeente=("gemeente", "first"),
         ).reset_index()
 
-        if sorteer.startswith("Datum"):
+        if "laag → hoog" in sorteer:
+            agg = agg.sort_values("max_rel", ascending=True, na_position="last")
+        elif sorteer.startswith("Datum"):
             agg = agg.sort_values("datum", ascending=False, na_position="last")
         elif sorteer.startswith("Gemeente"):
             agg = agg.sort_values(["gemeente", "max_rel"], ascending=[True, False])
-        else:
+        else:  # Relevantie (hoog → laag)
             agg = agg.sort_values("max_rel", ascending=False, na_position="last")
 
         # Eén kaart per document, met alle indicator-signalen erin.
@@ -262,6 +272,31 @@ with tab_signalen:
                         st.caption(r.onderbouwing)
                 if eerste.url:
                     st.link_button("Bron openen", eerste.url)
+
+# ========================== TAB: NETCONGESTIE ==============================
+with tab_net:
+    st.markdown("Live transportcapaciteit van het elektriciteitsnet per "
+                "**voedingsgebied** (netvlak rond een onderstation). "
+                "Bron: capaciteitskaart Netbeheer Nederland.")
+    st.caption("🟢 ruim · 🟡 beperkt · 🟠 in onderzoek (wachtrij) · 🔴 tekort "
+               "(wachtrij). Wachtrij = openstaande aanvragen in MW.")
+    netdata = _netcongestie(tuple(GEMEENTEN))
+    for g in GEMEENTEN:
+        st.subheader(g)
+        rijen = netdata.get(g, [])
+        if not rijen:
+            st.write("Geen netgegevens gevonden voor deze gemeente.")
+            continue
+        tabel_net = pd.DataFrame([{
+            "Voedingsgebied": r["gebied"],
+            "Afname": nc.label(r["afname"]),
+            "Opwek": nc.label(r["opwek"]),
+            "Wachtrij afname (MW)": r["wachtrij_afname"],
+            "Wachtrij invoeding (MW)": r["wachtrij_invoeding"],
+            "Netbeheerder": r["rnb"],
+        } for r in rijen])
+        st.dataframe(tabel_net, hide_index=True, use_container_width=True)
+    st.link_button("Open de officiële capaciteitskaart", nc.KAART_URL)
 
 # ============================= TAB 2: CHAT ==================================
 with tab_chat:
