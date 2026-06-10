@@ -1,0 +1,8 @@
+requests
+anthropic
+streamlit
+python-dotenv
+beautifulsoup4
+pandas
+lxml
+pypdf

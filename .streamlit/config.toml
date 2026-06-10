@@ -1,0 +1,11 @@
+# Huisstijl Today Development — afgeleid van het officiële logo:
+# zachte gradient lavendel -> koraal -> crème, met bijna-zwarte tekst.
+[theme]
+primaryColor = "#7E73B0"             # accent (slider/links/knoppen) — gedempt paars
+backgroundColor = "#FFFFFF"          # hoofdachtergrond
+secondaryBackgroundColor = "#FAF4EC" # kaarten/zijbalk (crème-tint)
+textColor = "#1A1A1A"                # tekst (bijna zwart)
+font = "sans serif"
+
+[server]
+headless = true

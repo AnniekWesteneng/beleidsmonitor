@@ -1,0 +1,307 @@
+"""Laag 4 — Tonen: Streamlit-dashboard (Today Development-huisstijl).
+
+Draaien:  streamlit run dashboard.py
+
+HUISSTIJL AANPASSEN:
+- Kleuren: pas BRAND hieronder + .streamlit/config.toml aan.
+- Logo: zet je logobestand neer als  assets/logo.png  (of .svg) — het wordt
+  dan automatisch in de koptekst getoond.
+"""
+import base64
+import os
+import sqlite3
+from pathlib import Path
+
+import pandas as pd
+import streamlit as st
+
+from database import DB_PATH
+from config import INDICATOREN
+
+
+def _secret(naam, default=None):
+    """Lees een waarde uit Streamlit-secrets (cloud); val terug op default."""
+    try:
+        return st.secrets[naam]
+    except Exception:
+        return default
+
+# --- Huisstijl Today Development -------------------------------------------
+# Afgeleid van hun logo: donkere tekst ("TODAY" groot, "REAL ESTATE DEVELOPMENT"
+# klein) op een zachte pastel-gradient (lila/paars -> perzik -> crème).
+BRAND = {
+    "tekst": "#1A1A1A",        # logo-/koptekst (bijna zwart)
+    "grad1": "#9B93C9",        # lavendel/paars (linksboven in het logo)
+    "grad2": "#DDA68E",        # koraal/perzik (rechtsboven)
+    "grad3": "#FBF1E6",        # crème (onder)
+    "accent": "#7E73B0",       # gedempt paars (slider/links/randjes)
+    "licht": "#FAF4EC",        # kaartachtergrond (crème-tint)
+}
+ASSETS = Path(__file__).resolve().parent / "assets"
+
+# Koppel indicator-ID aan de betekenis, zodat we de naam tonen i.p.v. "indicator 2".
+INDICATOR_NAAM = {i["id"]: i["naam"] for i in INDICATOREN}
+
+
+def indicator_label(indicator_id) -> str:
+    try:
+        nr = int(indicator_id)
+    except (TypeError, ValueError):
+        return "Geen indicator"
+    naam = INDICATOR_NAAM.get(nr)
+    return f"{nr}. {naam}" if naam else f"Indicator {nr}"
+
+
+st.set_page_config(page_title="Beleidsmonitor · Today Development",
+                   page_icon="📍", layout="wide")
+
+# API-sleutel uit Streamlit-secrets (cloud) overnemen naar de omgeving, zodat de
+# chat ook online werkt. Lokaal blijft .env gewoon werken.
+_api = _secret("ANTHROPIC_API_KEY")
+if _api:
+    os.environ["ANTHROPIC_API_KEY"] = _api
+
+
+def _wachtwoord_ok() -> bool:
+    """Wachtwoord-slot. Is er geen wachtwoord ingesteld (bv. lokaal), dan open.
+    Online (Streamlit Cloud) zet je 'app_wachtwoord' in de secrets."""
+    juist = _secret("app_wachtwoord")
+    if not juist:
+        return True  # geen wachtwoord ingesteld -> vrij toegankelijk
+    if st.session_state.get("auth_ok"):
+        return True
+    st.markdown("#### 🔒 Beveiligde toegang")
+    ingevoerd = st.text_input("Wachtwoord", type="password")
+    if ingevoerd:
+        if ingevoerd == juist:
+            st.session_state.auth_ok = True
+            st.rerun()
+        else:
+            st.error("Onjuist wachtwoord.")
+    return False
+
+
+def _logo_html() -> str:
+    """Toon het logo als assets/logo.png|svg bestaat; anders een woordmerk."""
+    for naam, mime in [("logo.svg", "image/svg+xml"), ("logo.png", "image/png"),
+                       ("logo.jpg", "image/jpeg")]:
+        pad = ASSETS / naam
+        if pad.exists():
+            data = base64.b64encode(pad.read_bytes()).decode()
+            return f'<img src="data:{mime};base64,{data}" style="height:44px;">'
+    # Terugval: tekstueel woordmerk in de stijl van hun logo — "TODAY" in een
+    # elegant schreef-lettertype, ondertitel in dunne, gespatieerde letters.
+    return (f'<div style="line-height:1;color:{BRAND["tekst"]};">'
+            '<div style="font-family:Georgia,\'Times New Roman\',serif;'
+            'font-size:2.3rem;font-weight:700;letter-spacing:1px;">TODAY</div>'
+            '<div style="font-size:.68rem;font-weight:400;letter-spacing:4px;'
+            'opacity:.8;margin-top:2px;">REAL ESTATE DEVELOPMENT</div></div>')
+
+
+# Huisstijl-CSS
+st.markdown(f"""
+<style>
+  .block-container {{ padding-top: 3rem; }}
+  .td-header {{
+    background: linear-gradient(120deg, {BRAND['grad1']} 0%, {BRAND['grad2']} 55%, {BRAND['grad3']} 100%);
+    border-radius: 12px; padding: 22px 30px; margin-bottom: 1.3rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }}
+  .td-header .titel {{
+    color: {BRAND['tekst']}; font-size: 1.15rem; font-weight: 700;
+    text-align: right;
+  }}
+  .td-header .titel small {{ display:block; opacity:.65; font-weight:400; font-size:.8rem; }}
+  div[data-testid="stMetric"] {{
+    background: {BRAND['licht']}; border-radius: 10px; padding: 14px 16px;
+    border-left: 4px solid {BRAND['accent']};
+  }}
+</style>
+<div class="td-header">
+  <div>{_logo_html()}</div>
+  <div class="titel">Beleidsmonitor industrieel vastgoed
+    <small>Signalen uit gemeentelijk &amp; provinciaal beleid</small></div>
+</div>
+""", unsafe_allow_html=True)
+
+# Wachtwoord-slot (alleen actief als er online een wachtwoord is ingesteld).
+if not _wachtwoord_ok():
+    st.stop()
+
+conn = sqlite3.connect(DB_PATH)
+try:
+    df = pd.read_sql("SELECT * FROM signalen", conn)
+except Exception:
+    df = pd.DataFrame()
+
+if df.empty:
+    st.info("Nog geen signalen in de database. Draai eerst de pipeline:  "
+            "`python pipeline.py`")
+    st.stop()
+
+# Hulpkolommen
+df["_datum"] = pd.to_datetime(df["datum"], errors="coerce")
+df["_zoektekst"] = (df["titel"].fillna("") + " " + df["samenvatting"].fillna("")
+                    + " " + df["onderbouwing"].fillna("")).str.lower()
+# Documentsleutel: gelijke url = zelfde document (anders op titel terugvallen).
+df["_doc"] = df["url"].where(df["url"].astype(bool), df["titel"])
+
+
+def relevantie_sterren(waarde) -> str:
+    try:
+        n = int(waarde)
+    except (TypeError, ValueError):
+        return "—"
+    return "★" * n + "☆" * (5 - n)
+
+
+# --- Kerngetallen (overzicht over alle data) ---
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Signalen", len(df))
+col2.metric("Kansen", len(df[df.classificatie == "kans"]))
+col3.metric("Risico's", len(df[df.classificatie == "risico"]))
+col4.metric("Documenten", df["_doc"].nunique())
+
+# --- Filters in de zijbalk ---
+with st.sidebar:
+    st.header("Filters")
+    zoek = st.text_input("🔍 Zoeken", placeholder="bv. netcongestie, Binckhorst")
+
+    gem = st.multiselect("Gemeente", sorted(df.gemeente.dropna().unique()),
+                         default=sorted(df.gemeente.dropna().unique()))
+    cls = st.multiselect("Classificatie", ["kans", "risico", "contextafhankelijk"],
+                         default=["kans", "risico", "contextafhankelijk"])
+    bron_sel = st.multiselect("Bron", sorted(df.bron.dropna().unique()),
+                              default=sorted(df.bron.dropna().unique()))
+
+    aantal_per_ind = df.indicator_id.dropna().astype(int).value_counts().to_dict()
+    ind_opties = {f"{indicator_label(i['id'])}  ({aantal_per_ind.get(i['id'], 0)})": i["id"]
+                  for i in INDICATOREN}
+    ind_sel_labels = st.multiselect("Indicator", list(ind_opties.keys()),
+                                    default=list(ind_opties.keys()))
+    ind_sel_ids = [ind_opties[l] for l in ind_sel_labels]
+
+    min_rel = st.slider("Minimale relevantie (★)", 1, 5, 4,
+                        help="Standaard 4: alleen sterke signalen. Zet op 1 om alles te zien.")
+
+    # Datumbereik
+    geldige = df["_datum"].dropna()
+    van = tot = None
+    if not geldige.empty:
+        dmin, dmax = geldige.min().date(), geldige.max().date()
+        keuze = st.date_input("Periode", value=(dmin, dmax),
+                              min_value=dmin, max_value=dmax)
+        if isinstance(keuze, (tuple, list)) and len(keuze) == 2:
+            van, tot = keuze
+        else:
+            van, tot = dmin, dmax
+
+    sorteer = st.selectbox("Sorteren op",
+                           ["Relevantie (hoog → laag)", "Datum (nieuw → oud)",
+                            "Gemeente (A → Z)"])
+
+# --- Filteren ---
+mask = (
+    df.gemeente.isin(gem)
+    & df.classificatie.isin(cls)
+    & df.bron.isin(bron_sel)
+    & df.indicator_id.isin(ind_sel_ids)
+    & (df.relevantie.fillna(0) >= min_rel)
+)
+if zoek:
+    mask &= df["_zoektekst"].str.contains(zoek.lower(), regex=False, na=False)
+if van and tot:
+    d = df["_datum"]
+    mask &= d.isna() | ((d.dt.date >= van) & (d.dt.date <= tot))
+
+filtered = df[mask]
+
+st.caption(f"{filtered['_doc'].nunique()} documenten · {len(filtered)} signalen "
+           f"(van {df['_doc'].nunique()} / {len(df)} totaal).")
+
+kleuren = {"kans": "🟢", "risico": "🔴", "contextafhankelijk": "🟠"}
+
+tab_signalen, tab_chat = st.tabs(["📋 Signalen", "💬 Vraag de monitor"])
+
+# =========================== TAB 1: SIGNALEN ================================
+with tab_signalen:
+    if filtered.empty:
+        st.warning("Geen signalen die aan de filters voldoen. "
+                   "Versoepel de filters in de zijbalk.")
+    else:
+        agg = filtered.groupby("_doc").agg(
+            max_rel=("relevantie", "max"),
+            datum=("_datum", "max"),
+            gemeente=("gemeente", "first"),
+        ).reset_index()
+
+        if sorteer.startswith("Datum"):
+            agg = agg.sort_values("datum", ascending=False, na_position="last")
+        elif sorteer.startswith("Gemeente"):
+            agg = agg.sort_values(["gemeente", "max_rel"], ascending=[True, False])
+        else:
+            agg = agg.sort_values("max_rel", ascending=False, na_position="last")
+
+        # Eén kaart per document, met alle indicator-signalen erin.
+        for _, doc in agg.iterrows():
+            rijen = filtered[filtered["_doc"] == doc["_doc"]].sort_values(
+                "relevantie", ascending=False, na_position="last")
+            eerste = rijen.iloc[0]
+            dots = "".join(dict.fromkeys(kleuren.get(c, "⚪") for c in rijen.classificatie))
+            sterren = relevantie_sterren(doc["max_rel"])
+            with st.expander(f"{dots} {sterren} {eerste.titel} — {eerste.gemeente}"):
+                st.caption(f"{eerste.documenttype} · {eerste.datum} · {eerste.bron} "
+                           f"· {len(rijen)} signaal/signalen")
+                for _, r in rijen.iterrows():
+                    kleur = kleuren.get(r.classificatie, "⚪")
+                    st.markdown(f"{kleur} **{indicator_label(r.indicator_id)}** — "
+                                f"{r.classificatie or '–'} · {relevantie_sterren(r.relevantie)}")
+                    if r.samenvatting:
+                        st.write(r.samenvatting)
+                    if r.onderbouwing:
+                        st.caption(r.onderbouwing)
+                if eerste.url:
+                    st.link_button("Bron openen", eerste.url)
+
+# ============================= TAB 2: CHAT ==================================
+with tab_chat:
+    import chat as chatmodule
+
+    st.markdown("Stel een vraag in gewone taal. De chat antwoordt op basis van de "
+                "signalen die nú door je filters komen.")
+    st.caption(f"Kennisbasis: {filtered['_doc'].nunique()} documenten / {len(filtered)} "
+               "signalen. ⚠️ Elke vraag kost een paar cent API-tegoed.")
+
+    model_label = st.selectbox("Model", list(chatmodule.MODELLEN.keys()), index=0)
+
+    if "chatgeschiedenis" not in st.session_state:
+        st.session_state.chatgeschiedenis = []
+
+    # Toon de gesprekgeschiedenis.
+    for m in st.session_state.chatgeschiedenis:
+        with st.chat_message(m["role"]):
+            st.markdown(m["content"])
+
+    vraag = st.chat_input("Bv. Wat zijn de grootste risico's in Den Haag?")
+    if vraag:
+        with st.chat_message("user"):
+            st.markdown(vraag)
+        st.session_state.chatgeschiedenis.append({"role": "user", "content": vraag})
+
+        with st.chat_message("assistant"):
+            with st.spinner("Aan het nadenken…"):
+                # Context: de meest relevante signalen binnen de huidige selectie.
+                top = filtered.sort_values("relevantie", ascending=False, na_position="last").head(50)
+                context = "\n".join(
+                    f"- [{r.gemeente}] indicator {r.indicator_id} ({r.classificatie}, "
+                    f"relevantie {r.relevantie}): {r.titel} — {r.samenvatting}"
+                    for _, r in top.iterrows()
+                ) or "(geen signalen in de huidige selectie)"
+                try:
+                    antwoord = chatmodule.beantwoord_vraag(
+                        vraag, context, chatmodule.MODELLEN[model_label])
+                except Exception as e:
+                    antwoord = (f"⚠️ Er ging iets mis — waarschijnlijk geen API-tegoed "
+                                f"of de sleutel ontbreekt.\n\n_Details: {e}_")
+                st.markdown(antwoord)
+        st.session_state.chatgeschiedenis.append({"role": "assistant", "content": antwoord})

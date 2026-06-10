@@ -1,0 +1,20 @@
+# Geheimen
+.env
+
+# Database — andere .db-bestanden negeren, maar de snapshot voor de cloud
+# (beleidsmonitor.db) WEL meesturen zodat de online versie data heeft.
+*.db
+!beleidsmonitor.db
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS
+Thumbs.db
+.DS_Store
