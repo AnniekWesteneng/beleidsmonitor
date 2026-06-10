@@ -145,6 +145,39 @@ zitten in de geplande pipeline-run.
 
 ---
 
+## Continu monitoren (automatisch bijhouden)
+
+Nu draait de pipeline **handmatig**. Voor automatisch bijhouden moet de pipeline
+op een schema draaien én moeten de resultaten beschikbaar komen.
+
+**Belangrijk:** Streamlit Cloud kan de pipeline zelf **niet** draaien (het toont
+alleen het dashboard, en de opslag is tijdelijk). Het verzamelen gebeurt dus
+ergens anders, waarna de bijgewerkte database online wordt gezet.
+
+| Manier | Draait als pc uit is? | Kosten | Moeite | Past bij |
+|---|---|---|---|---|
+| Windows Taakplanner (eigen pc) | Nee | Gratis | Laag | snel starten, klein |
+| GitHub Actions (cloud) | Ja | Gratis (binnen limieten) | Midden | huidige GitHub + Streamlit-opzet |
+| Cloud-server (cron-job) | Ja | € per maand | Hoog | bedrijfsbreed / groot volume |
+
+**Cadans:** dagelijks · **wekelijks (aanbevolen)** · maandelijks. Wekelijks is
+meestal de juiste balans tussen actualiteit en kosten.
+
+**Wat is automatisch actueel?**
+- **Netcongestie:** altijd live — geen planning nodig.
+- **Signalen (beleid):** vereisen geplande pipeline-runs.
+- **Meldingen:** hangen af van die geplande runs.
+
+**Kosten per run:** alleen *nieuwe* documenten worden geclassificeerd, dus een
+geplande run is goedkoop (van een paar cent tot ~€0,50, afhankelijk van volume
+en aantal gemeenten).
+
+**Aanbevolen opzet:** GitHub Actions, wekelijks → de pipeline draait in de cloud,
+zet de bijgewerkte database terug in GitHub, Streamlit werkt zich vanzelf bij, en
+stuurt optioneel een melding bij nieuwe sterke risico's.
+
+---
+
 ## Overige functies
 
 - Kaartweergave (signalen op een kaart van Nederland).

@@ -224,6 +224,35 @@ tabel(doc, ["Niveau", "Hoe", "Haalbaarheid"],
 alinea(doc, "Samenhang: meldingen vereisen dat de pipeline automatisch draait. De "
             "meldingen zelf zijn gratis; de kosten zitten in de geplande run.")
 
+# --- Continu monitoren ---
+kop(doc, "Continu monitoren (automatisch bijhouden)")
+alinea(doc, "Nu draait de pipeline handmatig. Voor automatisch bijhouden moet de "
+            "pipeline op een schema draaien én moeten de resultaten beschikbaar "
+            "komen. Belangrijk: Streamlit Cloud kan de pipeline zelf niet draaien "
+            "(het toont alleen het dashboard, en de opslag is tijdelijk); het "
+            "verzamelen gebeurt elders, waarna de bijgewerkte database online komt.")
+tabel(doc, ["Manier", "Pc uit = werkt?", "Kosten", "Moeite", "Past bij"],
+      [
+          ["Windows Taakplanner (eigen pc)", "Nee", "Gratis", "Laag", "snel starten, klein"],
+          ["GitHub Actions (cloud)", "Ja", "Gratis (binnen limieten)", "Midden", "huidige GitHub + Streamlit"],
+          ["Cloud-server (cron-job)", "Ja", "€ per maand", "Hoog", "bedrijfsbreed / groot"],
+      ],
+      [4.5, 2.7, 3.3, 1.8, 3.7])
+alinea(doc, "Cadans: dagelijks · wekelijks (aanbevolen) · maandelijks. Wekelijks "
+            "is meestal de juiste balans tussen actualiteit en kosten.")
+bullets(doc, [
+    ("Netcongestie", "altijd live — geen planning nodig."),
+    ("Signalen (beleid)", "vereisen geplande pipeline-runs."),
+    ("Meldingen", "hangen af van die geplande runs."),
+])
+alinea(doc, "Kosten per run: alleen nieuwe documenten worden geclassificeerd, dus "
+            "een geplande run is goedkoop (paar cent tot ~€0,50, afhankelijk van "
+            "volume en aantal gemeenten).")
+ar = doc.add_paragraph(); ar.add_run("Aanbevolen opzet: ").bold = True
+ar.add_run("GitHub Actions, wekelijks → de pipeline draait in de cloud, zet de "
+           "bijgewerkte database terug in GitHub, Streamlit werkt zich vanzelf bij, "
+           "en stuurt optioneel een melding bij nieuwe sterke risico's.")
+
 # --- Overige functies ---
 kop(doc, "Overige functies")
 bullets(doc, [
@@ -256,5 +285,10 @@ bullets(doc, [
 ])
 
 uit = "Uitbreidingsplan Beleidsmonitor Today Development.docx"
-doc.save(uit)
-print("Document opgeslagen:", uit)
+try:
+    doc.save(uit)
+    print("Document opgeslagen:", uit)
+except PermissionError:
+    uit2 = "Uitbreidingsplan Beleidsmonitor Today Development (bijgewerkt).docx"
+    doc.save(uit2)
+    print(f"Origineel stond open in Word; opgeslagen als: {uit2}")
