@@ -165,13 +165,6 @@ def relevantie_sterren(waarde) -> str:
     return "★" * n + "☆" * (5 - n)
 
 
-# --- Kerngetallen (overzicht over alle data) ---
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Signalen", len(df))
-col2.metric("Kansen", len(df[df.classificatie == "kans"]))
-col3.metric("Risico's", len(df[df.classificatie == "risico"]))
-col4.metric("Documenten", df["_doc"].nunique())
-
 # --- Filters in de zijbalk ---
 with st.sidebar:
     st.header("Filters")
@@ -225,9 +218,6 @@ if van and tot:
     mask &= d.isna() | ((d.dt.date >= van) & (d.dt.date <= tot))
 
 filtered = df[mask]
-
-st.caption(f"{filtered['_doc'].nunique()} documenten · {len(filtered)} signalen "
-           f"(van {df['_doc'].nunique()} / {len(df)} totaal).")
 
 kleuren = {"kans": "🟢", "risico": "🔴", "contextafhankelijk": "🟠"}
 
