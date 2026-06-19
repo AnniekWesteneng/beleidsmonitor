@@ -16,7 +16,7 @@ import pandas as pd
 import streamlit as st
 
 from database import DB_PATH
-from config import INDICATOREN, GEMEENTEN
+from config import INDICATOREN, GEMEENTEN, PROVINCIES, GEMEENTE_PROVINCIE
 from bronnen import netcongestie as nc
 from bronnen import omgevingsloket as olo
 
@@ -156,6 +156,14 @@ df["_zoektekst"] = (df["titel"].fillna("") + " " + df["samenvatting"].fillna("")
 # Documentsleutel: gelijke url = zelfde document (anders op titel terugvallen).
 df["_doc"] = df["url"].where(df["url"].astype(bool), df["titel"])
 
+# Niveau (gemeente vs provincie) en bijbehorende provincie afleiden.
+# Provincienamen die GEEN gemeente zijn = provinciaal-niveau signalen.
+_PURE_PROVINCIES = set(PROVINCIES) - set(GEMEENTE_PROVINCIE)
+df["_niveau"] = df["gemeente"].apply(
+    lambda g: "provincie" if g in _PURE_PROVINCIES else "gemeente")
+df["_provincie"] = df["gemeente"].apply(
+    lambda g: g if g in _PURE_PROVINCIES else GEMEENTE_PROVINCIE.get(g, "Overig"))
+
 
 def relevantie_sterren(waarde) -> str:
     try:
@@ -170,8 +178,12 @@ with st.sidebar:
     st.header("Filters")
     zoek = st.text_input("🔍 Zoeken", placeholder="bv. netcongestie, Binckhorst")
 
-    gem = st.multiselect("Gemeente", sorted(df.gemeente.dropna().unique()),
-                         default=sorted(df.gemeente.dropna().unique()))
+    prov_opties = sorted(df["_provincie"].dropna().unique())
+    prov_sel = st.multiselect("Provincie", prov_opties, default=prov_opties)
+    # Gemeenten (geen provinciaal niveau) binnen de gekozen provincie(s).
+    gem_opties = sorted(df.loc[(df["_niveau"] == "gemeente") &
+                               (df["_provincie"].isin(prov_sel)), "gemeente"].dropna().unique())
+    gem = st.multiselect("Gemeente", gem_opties, default=gem_opties)
     cls = st.multiselect("Classificatie", ["kans", "risico", "contextafhankelijk"],
                          default=["kans", "risico", "contextafhankelijk"])
 
@@ -203,7 +215,8 @@ with st.sidebar:
 
 # --- Filteren ---
 mask = (
-    df.gemeente.isin(gem)
+    df["_provincie"].isin(prov_sel)
+    & (df.gemeente.isin(gem) | (df["_niveau"] == "provincie"))
     & df.classificatie.isin(cls)
     & df.indicator_id.isin(ind_sel_ids)
     & (df.relevantie.fillna(0) >= min_rel)

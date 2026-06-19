@@ -51,10 +51,22 @@ DEFINITIES:
   met directe, grote impact op een bedrijventerrein); 3 = duidelijk relevant maar
   indirect of beperkt van omvang; 1 = marginaal/zijdelings relevant.
 
+PERSPECTIEF — beoordeel kans/risico ALTIJD vanuit Today (ontwikkelaar van
+industrieel vastgoed), niet vanuit de partij in het document. Een maatregel die
+negatief is voor de huidige gebruiker (bv. een veehouder of milieubelastend
+bedrijf dat moet stoppen of verplaatsen) kan voor Today een KANS zijn — maar
+ALLEEN als de vrijkomende grond voor industrie/logistiek beschikbaar of bestemd
+komt. Gaat de vrijkomende ruimte naar WONINGBOUW, dan is dit signaal NIET RELEVANT
+voor Today — neem het dan niet op. Is het onduidelijk wat er met de grond gebeurt:
+contextafhankelijk en lagere relevantie.
+
 BELANGRIJKE NUANCES:
 - Netcongestie (indicator 4) valt grotendeels buiten gemeentelijk beleid (netbeheerders Liander/Stedin).
 - Herstructurering met behoud werkbestemming = kans; transformatie naar wonen = risico.
-- Uitplaatsing milieubelastend bedrijf kan een kans zijn (vrijkomende locatie + stroomcapaciteit).
+- Vrijkomende grond door beëindiging/uitplaatsing van bestaande functies (ook
+  agrarisch, bv. veehouderij, of milieubelastend) = KANS als die grond voor
+  industrie/logistiek benut/bestemd wordt; gaat het naar woningbouw dan is het NIET
+  RELEVANT (niet opnemen); is het onbekend = contextafhankelijk.
 
 BELANGRIJK — één document kan MEERDERE indicatoren raken. Een visie op werklocaties
 kan bijvoorbeeld tegelijk indicator 2 (beschikbaarheid), 8 (functieverruiming) en

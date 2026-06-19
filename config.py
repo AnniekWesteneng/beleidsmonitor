@@ -12,6 +12,24 @@ GEMEENTEN = [
 # je gemeenten toevoegt. Alleen de Officiële-Bekendmakingen-bron gebruikt deze.
 PROVINCIES = ["Zuid-Holland", "Utrecht", "Flevoland", "Noord-Brabant"]
 
+# Bij welke provincie hoort elke gemeente (voor de aparte provincie-/gemeentefilters
+# in het dashboard). Breid mee uit als je gemeenten toevoegt.
+GEMEENTE_PROVINCIE = {
+    "Den Haag": "Zuid-Holland",
+    "Utrecht": "Utrecht",
+    "Almere": "Flevoland",
+    "Tilburg": "Noord-Brabant",
+    "Waalwijk": "Noord-Brabant",
+    "Moerdijk": "Noord-Brabant",
+    "Breda": "Noord-Brabant",
+    "Oosterhout": "Noord-Brabant",
+    "Meierijstad": "Noord-Brabant",
+    "Oss": "Noord-Brabant",
+    "'s-Hertogenbosch": "Noord-Brabant",
+    "Eindhoven": "Noord-Brabant",
+    "Helmond": "Noord-Brabant",
+}
+
 # De 10 beleidsindicatoren uit het onderzoek (bijlage 12/13)
 INDICATOREN = [
     {"id": 1, "naam": "Transformatiedruk op industriële bestemming", "classificatie": "contextafhankelijk"},
