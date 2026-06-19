@@ -18,6 +18,7 @@ import streamlit as st
 from database import DB_PATH
 from config import INDICATOREN, GEMEENTEN
 from bronnen import netcongestie as nc
+from bronnen import omgevingsloket as olo
 
 
 def _secret(naam, default=None):
@@ -61,6 +62,9 @@ st.set_page_config(page_title="Beleidsmonitor · Today Development",
 _api = _secret("ANTHROPIC_API_KEY")
 if _api:
     os.environ["ANTHROPIC_API_KEY"] = _api
+_dso = _secret("DSO_PRE_API_KEY")
+if _dso:
+    os.environ["DSO_PRE_API_KEY"] = _dso
 
 
 def _wachtwoord_ok() -> bool:
@@ -233,8 +237,13 @@ def _netcongestie(gemeenten_tuple):
     return nc.haal_netcongestie(list(gemeenten_tuple))
 
 
-tab_signalen, tab_net, tab_chat = st.tabs(
-    ["📋 Signalen", "🔌 Netcongestie", "💬 Vraag de monitor"])
+@st.cache_data(ttl=3600, show_spinner=False)
+def _regels_op_adres(adres):
+    return olo.regels_op_adres(adres)
+
+
+tab_signalen, tab_net, tab_adres, tab_chat = st.tabs(
+    ["📋 Signalen", "🔌 Netcongestie", "📍 Zoek op adres", "💬 Vraag de monitor"])
 
 # =========================== TAB 1: SIGNALEN ================================
 with tab_signalen:
@@ -322,6 +331,49 @@ with tab_net:
             } for r in rijen])
             st.dataframe(tabel_net, hide_index=True, use_container_width=True)
     st.link_button("Open de officiële capaciteitskaart", nc.KAART_URL)
+
+# ========================= TAB: ZOEK OP ADRES ==============================
+with tab_adres:
+    st.markdown("Typ een adres → de **geldende omgevingsdocumenten** op die locatie "
+                "(uit het DSO/Omgevingsloket) plus onze kans/risico-signalen voor die gemeente.")
+    st.caption("⚠️ DSO-data komt uit de PRE/testomgeving — sommige regelingen zijn "
+               "testdata, niet de echte actuele omgevingsplannen. Voor productiedata "
+               "is een productiesleutel nodig.")
+    adres = st.text_input("Adres", placeholder="bv. Atoomweg 50, Utrecht")
+    if adres:
+        with st.spinner("Adres opzoeken en DSO bevragen…"):
+            res = _regels_op_adres(adres)
+        loc = res.get("locatie")
+        if not loc:
+            st.warning(res.get("fout", "Adres niet gevonden."))
+        else:
+            st.markdown(f"📍 **{loc.get('weergavenaam')}** — gemeente {loc.get('gemeente')}")
+            if res.get("fout"):
+                st.info(f"DSO: {res['fout']}")
+            else:
+                regs = res.get("regelingen", [])
+                st.subheader(f"Geldende omgevingsdocumenten ({len(regs)})")
+                for reg in regs:
+                    st.markdown(f"- {reg['naam']}")
+            st.link_button("Open 'Regels op de kaart' (officieel)",
+                           "https://omgevingswet.overheid.nl/regels-op-de-kaart/")
+
+            # Onze eigen signalen voor de gemeente van dit adres.
+            bag = loc.get("gemeente") or ""
+            ons_gem = {"'s-Gravenhage": "Den Haag"}.get(bag, bag)
+            eigen = df[df.gemeente == ons_gem]
+            st.subheader(f"Onze signalen in {ons_gem} "
+                         f"({eigen['_doc'].nunique()} documenten)")
+            if eigen.empty:
+                st.write("Geen signalen voor deze gemeente in de database.")
+            else:
+                top = eigen.sort_values("relevantie", ascending=False,
+                                        na_position="last").head(5)
+                for _, r in top.iterrows():
+                    kl = kleuren.get(r.classificatie, "⚪")
+                    st.markdown(f"{kl} **{indicator_label(r.indicator_id)}** — "
+                                f"{r.titel[:60]}")
+                st.caption("Zie het tabblad Signalen voor alle signalen + filters.")
 
 # ============================= TAB 2: CHAT ==================================
 with tab_chat:

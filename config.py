@@ -39,3 +39,8 @@ INCLUSIEF_PROVINCIE = True
 # Hoger = vollediger maar duurder.
 MAX_TEKST_TEKENS = 16000
 
+# AI-model voor classificatie. Haiku = snel & goedkoop (~3x goedkoper dan Sonnet),
+# ruim voldoende voor signaleren. Wil je diepere/genuanceerdere analyse?
+# Zet op "claude-sonnet-4-6" (duurder).
+CLASSIFICATIE_MODEL = "claude-haiku-4-5"
+

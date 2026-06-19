@@ -8,17 +8,15 @@ import re
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
-from config import INDICATOREN, MAX_TEKST_TEKENS
+from config import INDICATOREN, MAX_TEKST_TEKENS, CLASSIFICATIE_MODEL
 from verwerk import maak_fragment
 
 load_dotenv()
 
 GELDIGE_KLASSEN = {"kans", "risico", "contextafhankelijk"}
 
-# Het model uit het bouwplan (claude-sonnet-4-20250514) is per 2026 uitgefaseerd.
-# We gebruiken de huidige opvolger. Andere opties: claude-haiku-4-5 (goedkoper),
-# claude-opus-4-8 (krachtiger/duurder).
-MODEL = "claude-sonnet-4-6"
+# Model komt uit config (CLASSIFICATIE_MODEL); standaard Haiku (goedkoop).
+MODEL = CLASSIFICATIE_MODEL
 
 _client = None
 
@@ -129,7 +127,10 @@ def classificeer(titel: str, tekst: str, zoekterm: str | None = None) -> list[di
         bericht = _get_client().messages.create(
             model=MODEL,
             max_tokens=1500,
-            system=SYSTEEM_PROMPT,
+            # Prompt-caching: de vaste systeeminstructie wordt hergebruikt over veel
+            # documenten heen, wat de invoerkosten flink drukt bij grote runs.
+            system=[{"type": "text", "text": SYSTEEM_PROMPT,
+                     "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": f"Titel: {titel}\n\nTekst:\n{fragment}"}],
         )
         antwoord = bericht.content[0].text.strip()

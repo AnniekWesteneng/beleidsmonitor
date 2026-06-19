@@ -13,6 +13,10 @@ ZOEKTERMEN = [
     # Algemeen / kern
     "bedrijventerrein", "werklocatie", "bedrijvenpark",
 
+    # Bedrijfshuisvesting / verzamelgebouwen (Today-product; indicator 2 en 8)
+    "bedrijfsverzamelgebouw", "bedrijfsverzamelpand", "bedrijfsverzamelcentrum",
+    "verzamelgebouw", "bedrijfsunit", "logistiek vastgoed",
+
     # 1. Transformatiedruk op industriële bestemming
     "transformatie", "herbestemming", "transformatiegebied",
     "woningbouwlocatie", "functiemenging", "stedelijke verdichting",
