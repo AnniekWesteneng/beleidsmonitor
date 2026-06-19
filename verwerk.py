@@ -116,3 +116,38 @@ def maak_fragment(tekst: str, zoekterm: str | None = None,
 
     resultaat = " […] ".join(stukken)
     return resultaat[:limiet]
+
+
+def _norm(t: str) -> str:
+    return " ".join((t or "").lower().split())
+
+
+def pdf_paginas(pdf_url: str | None, timeout: int = 60) -> list[str]:
+    """Geef de (genormaliseerde) tekst per pagina van een PDF. Lege lijst als het
+    geen PDF is of niet lukt."""
+    if not pdf_url:
+        return []
+    try:
+        r = requests.get(pdf_url, headers=HEADERS, timeout=timeout)
+        if r.status_code != 200:
+            return []
+        reader = PdfReader(io.BytesIO(r.content))
+        return [_norm(p.extract_text() or "") for p in reader.pages]
+    except Exception:
+        return []
+
+
+def zoek_pagina(paginas: list[str], citaat: str) -> int | None:
+    """Zoek op welke pagina (1-gebaseerd) het citaat voorkomt; None indien niet
+    gevonden. Probeert aflopend kortere fragmenten voor robuustheid."""
+    naald = _norm(citaat)
+    if not paginas or len(naald) < 20:
+        return None
+    for lengte in (160, 90, 45):
+        frag = naald[:lengte]
+        if len(frag) < 20:
+            continue
+        for i, tekst in enumerate(paginas, start=1):
+            if frag in tekst:
+                return i
+    return None

@@ -140,6 +140,11 @@ if df.empty:
             "`python pipeline.py`")
     st.stop()
 
+# Zorg dat nieuwere kolommen bestaan, ook als de database nog niet gemigreerd is.
+for _kol in ["citaat", "pagina", "relevantie"]:
+    if _kol not in df.columns:
+        df[_kol] = None
+
 # Hulpkolommen
 df["_datum"] = pd.to_datetime(df["datum"], errors="coerce")
 df["_zoektekst"] = (df["titel"].fillna("") + " " + df["samenvatting"].fillna("")
@@ -270,6 +275,14 @@ with tab_signalen:
                         st.write(r.samenvatting)
                     if r.onderbouwing:
                         st.caption(r.onderbouwing)
+                    if pd.notna(r.citaat) and str(r.citaat).strip():
+                        pag = ""
+                        if pd.notna(r.pagina):
+                            try:
+                                pag = f" (pagina {int(r.pagina)})"
+                            except (TypeError, ValueError):
+                                pag = ""
+                        st.caption(f"📄 Vindplaats{pag}: «{str(r.citaat).strip()}»")
                 if eerste.url:
                     st.link_button("Bron openen", eerste.url)
 

@@ -64,9 +64,14 @@ kan bijvoorbeeld tegelijk indicator 2 (beschikbaarheid), 8 (functieverruiming) e
 indicatoren toe die het document daadwerkelijk en concreet raakt — verzin niets.
 Als het document niets relevants bevat, geef dan een lege lijst.
 
+Voeg per signaal een "citaat" toe: een KORT, LETTERLIJK overgenomen fragment
+(1-2 zinnen) uit de aangeleverde tekst waarop dit signaal is gebaseerd, zodat de
+vindplaats in het document terug te zoeken is. Neem het exact over (niet
+parafraseren). Laat leeg als er geen passende passage is.
+
 Antwoord UITSLUITEND met JSON, geen extra tekst. Per relevant signaal één object:
 {{"signalen": [
-  {{"indicator_id": <1-10>, "classificatie": "kans"/"risico"/"contextafhankelijk", "relevantie": <1-5>, "samenvatting": "<1-2 zinnen>", "onderbouwing": "<waarom>"}}
+  {{"indicator_id": <1-10>, "classificatie": "kans"/"risico"/"contextafhankelijk", "relevantie": <1-5>, "samenvatting": "<1-2 zinnen>", "onderbouwing": "<waarom>", "citaat": "<kort letterlijk fragment uit de tekst>"}}
 ]}}"""
 
 
@@ -107,6 +112,7 @@ def _schoon_signaal(s: dict) -> dict | None:
         "relevantie": relevantie,
         "samenvatting": (s.get("samenvatting") or "").strip(),
         "onderbouwing": (s.get("onderbouwing") or "").strip(),
+        "citaat": (s.get("citaat") or "").strip(),
     }
 
 

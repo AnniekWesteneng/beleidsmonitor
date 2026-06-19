@@ -17,6 +17,7 @@ from config import GEMEENTEN, ZOEKTERMEN, PROVINCIES
 from bronnen import officiele_bekendmakingen, open_raadsinformatie
 from classificeer import classificeer
 from database import init_db, sla_op, url_bestaat
+from verwerk import pdf_paginas as haal_pdf_paginas, zoek_pagina
 
 # Alle gekoppelde bronnen. Een nieuwe bron toevoegen = hier in de lijst zetten.
 BRONNEN = [officiele_bekendmakingen, open_raadsinformatie]
@@ -45,7 +46,15 @@ def run(gemeenten=None, zoektermen=None, max_per_term: int = 10, provincies=None
                         continue  # geen tekst: overslaan
                     # Eén document kan meerdere signalen opleveren.
                     signalen = classificeer(doc["titel"], tekst, zoekterm=term)
+                    # Voor de vindplaats: PDF-pagina's één keer per document ophalen
+                    # (alleen als er signalen met een citaat zijn).
+                    paginas = None
+                    if any(s.get("citaat") for s in signalen):
+                        pdf_kandidaat = doc.get("pdf_url") or doc.get("url")
+                        paginas = haal_pdf_paginas(pdf_kandidaat)
                     for signaal in signalen:
+                        if paginas and signaal.get("citaat"):
+                            signaal["pagina"] = zoek_pagina(paginas, signaal["citaat"])
                         sla_op(conn, {**doc, **signaal})
                         nieuw += 1
                     if signalen:
