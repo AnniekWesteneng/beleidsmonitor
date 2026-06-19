@@ -174,8 +174,6 @@ with st.sidebar:
                          default=sorted(df.gemeente.dropna().unique()))
     cls = st.multiselect("Classificatie", ["kans", "risico", "contextafhankelijk"],
                          default=["kans", "risico", "contextafhankelijk"])
-    bron_sel = st.multiselect("Bron", sorted(df.bron.dropna().unique()),
-                              default=sorted(df.bron.dropna().unique()))
 
     aantal_per_ind = df.indicator_id.dropna().astype(int).value_counts().to_dict()
     ind_opties = {f"{indicator_label(i['id'])}  ({aantal_per_ind.get(i['id'], 0)})": i["id"]
@@ -207,7 +205,6 @@ with st.sidebar:
 mask = (
     df.gemeente.isin(gem)
     & df.classificatie.isin(cls)
-    & df.bron.isin(bron_sel)
     & df.indicator_id.isin(ind_sel_ids)
     & (df.relevantie.fillna(0) >= min_rel)
 )
