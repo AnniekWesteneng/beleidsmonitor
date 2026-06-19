@@ -50,3 +50,9 @@ MAX_TEKST_TEKENS = 16000
 # Zet op "claude-sonnet-4-6" (duurder).
 CLASSIFICATIE_MODEL = "claude-haiku-4-5"
 
+# Paginanummer opzoeken bij PDF's voor de vindplaats. Dit downloadt + ontleedt
+# per document de volledige PDF en is daardoor traag — zet op False voor grote
+# runs. Het citaat (vindplaats-tekst) blijft hoe dan ook behouden; paginanummers
+# kun je later in een gerichte pass toevoegen.
+VINDPLAATS_PAGINA = False
+

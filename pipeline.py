@@ -13,7 +13,7 @@ Per bron/gemeente/zoekterm:
 
 Draaien:  python pipeline.py
 """
-from config import GEMEENTEN, ZOEKTERMEN, PROVINCIES
+from config import GEMEENTEN, ZOEKTERMEN, PROVINCIES, VINDPLAATS_PAGINA
 from bronnen import officiele_bekendmakingen, open_raadsinformatie
 from classificeer import classificeer
 from database import init_db, sla_op, url_bestaat
@@ -49,7 +49,7 @@ def run(gemeenten=None, zoektermen=None, max_per_term: int = 10, provincies=None
                     # Voor de vindplaats: PDF-pagina's één keer per document ophalen
                     # (alleen als er signalen met een citaat zijn).
                     paginas = None
-                    if any(s.get("citaat") for s in signalen):
+                    if VINDPLAATS_PAGINA and any(s.get("citaat") for s in signalen):
                         pdf_kandidaat = doc.get("pdf_url") or doc.get("url")
                         paginas = haal_pdf_paginas(pdf_kandidaat)
                     for signaal in signalen:
