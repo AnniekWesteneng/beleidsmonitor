@@ -38,7 +38,8 @@ HEADERS = {
 # Uitzonderingen op de standaard-indexnaam (slug). Onze 3 gemeenten volgen
 # de standaardregel, maar hier kun je afwijkende namen toevoegen.
 INDEX_ALIASSEN: dict[str, str] = {
-    # "Den Bosch": "ori_s-hertogenbosch",
+    # Den Bosch heet in ORI 'ori_den_bosch' (niet 's-hertogenbosch').
+    "'s-Hertogenbosch": "ori_den_bosch",
 }
 
 
