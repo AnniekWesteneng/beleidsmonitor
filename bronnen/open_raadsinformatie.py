@@ -122,7 +122,9 @@ def haal(gemeente: str, zoekterm: str, max_resultaten: int = 20,
             "documenttype": "Raadsstuk",
             "bron": BRON_NAAM,
             "datum": datum,
-            "url": src.get("original_url") or src.get("url") or "",
+            # De resolve-URL opent het document betrouwbaar (PDF). De directe
+            # original_url geeft bij sommige systemen, zoals notubiz, een 400.
+            "url": src.get("url") or src.get("original_url") or "",
             "tekst": _tekst_uit_hit(src),
         })
     return resultaten
