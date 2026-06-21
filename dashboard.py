@@ -19,6 +19,7 @@ from database import DB_PATH
 from config import INDICATOREN, GEMEENTEN, PROVINCIES, GEMEENTE_PROVINCIE
 from bronnen import netcongestie as nc
 from bronnen import omgevingsloket as olo
+from bronnen import kadaster as kad
 
 
 def _secret(naam, default=None):
@@ -348,6 +349,21 @@ with tab_adres:
             st.warning(res.get("fout", "Adres niet gevonden."))
         else:
             st.markdown(f"📍 **{loc.get('weergavenaam')}** — gemeente {loc.get('gemeente')}")
+
+            # Kadastraal perceel (Kadaster open data via PDOK) op deze locatie.
+            kres = kad.perceel_op_locatie(loc["rd_x"], loc["rd_y"])
+            p = kres.get("perceel")
+            if p:
+                opp = p.get("oppervlakte_m2")
+                opp_txt = f"{opp:,.0f} m²".replace(",", ".") if opp else "onbekend"
+                st.subheader("Kadastraal perceel")
+                st.markdown(f"🗺️ **{p['aanduiding']}** — oppervlakte **{opp_txt}**")
+                st.caption("Bron: Kadastrale Kaart (Kadaster open data via PDOK). "
+                           "Toont perceel en omvang; eigendomsgegevens (BRK) zijn "
+                           "betaald en niet opgenomen.")
+            else:
+                st.caption(f"Kadaster: {kres.get('fout', 'geen perceel gevonden')}")
+
             if res.get("fout"):
                 st.info(f"DSO: {res['fout']}")
             else:

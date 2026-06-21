@@ -1,0 +1,120 @@
+[ORI] Oss / bedrijventerrein
+[ORI] Oss / werklocatie
+[ORI] Oss / bedrijvenpark
+[ORI] Oss / bedrijfsverzamelgebouw
+  + v7 Raadsvoorstel Technisch herstel postzegelplannen BP  -> 2:contextafhankelijk, 7:contextafhankelijk
+[ORI] Oss / bedrijfsverzamelpand
+[ORI] Oss / bedrijfsverzamelcentrum
+[ORI] Oss / verzamelgebouw
+[ORI] Oss / bedrijfsunit
+[ORI] Oss / logistiek vastgoed
+[ORI] Oss / transformatie
+  + 20260318 Hoofdlijnenplanning Raadhuiskwartier - CONCEPT -> 10:risico, 7:risico, 5:contextafhankelijk
+[ORI] Oss / herbestemming
+[ORI] Oss / transformatiegebied
+  + Verstedelijking van Oss.pdf -> 2:kans, 5:kans, 8:kans, 9:kans
+[ORI] Oss / woningbouwlocatie
+[ORI] Oss / functiemenging
+[ORI] Oss / stedelijke verdichting
+[ORI] Oss / herontwikkeling bedrijventerrein
+[ORI] Oss / wonen-werken
+[ORI] Oss / woonmilieu
+[ORI] Oss / uitgeefbaar terrein
+[ORI] Oss / bedrijventerreinprogrammering
+[ORI] Oss / restcapaciteit
+[ORI] Oss / kavelbeschikbaarheid
+[ORI] Oss / terreincapaciteit
+[ORI] Oss / bedrijfsruimte behoefte
+[ORI] Oss / regionaal werkprogramma
+[ORI] Oss / milieuzonering
+[ORI] Oss / milieucategorie
+[ORI] Oss / geluidzone
+[ORI] Oss / hindercontour
+[ORI] Oss / VNG-categorieën
+[ORI] Oss / geluidszone industrielawaai
+[ORI] Oss / bedrijfscategorie
+[ORI] Oss / richtafstand
+[ORI] Oss / geurcontour
+[ORI] Oss / netcongestie
+[ORI] Oss / transformatorstation
+[ORI] Oss / energie-infrastructuur
+[ORI] Oss / transportcapaciteit
+  + Bijlage_9e_Archeologisch_BO_IVO_Amsteleind_zuid_en_Klei -> 10:risico
+[ORI] Oss / verzwaring elektriciteitsnet
+[ORI] Oss / aansluittermijn
+[ORI] Oss / transportverzoek
+[ORI] Oss / congestiegebied
+[ORI] Oss / netverzwaring
+[ORI] Oss / grootverbruikersaansluiting
+[ORI] Oss / ontsluiting
+[ORI] Oss / logistiek
+[ORI] Oss / verkeersbesluit
+[ORI] Oss / ontsluiting vrachtverkeer
+[ORI] Oss / havengebonden
+[ORI] Oss / multimodaal knooppunt
+[ORI] Oss / wegcategorisering
+[ORI] Oss / logistieke corridor
+[ORI] Oss / achterlandverbinding
+[ORI] Oss / spoorontsluiting
+[ORI] Oss / grondexploitatie
+[ORI] Oss / erfpacht
+[ORI] Oss / gronduitgifte
+[ORI] Oss / gemeentelijke grondpositie
+  + Groen in Zicht  dd 11 juli 2024  over WOO verzoeken ron -> 9:risico
+[ORI] Oss / erfpachtcanon
+[ORI] Oss / anterieure overeenkomst
+[ORI] Oss / actieve grondpolitiek
+[ORI] Oss / verwervingsstrategie
+[ORI] Oss / minnelijke verwerving
+[ORI] Oss / exploitatieplan
+[ORI] Oss / bouwvolume
+[ORI] Oss / bebouwingspercentage
+[ORI] Oss / bouwhoogte maximaal
+[ORI] Oss / parkeernorm
+[ORI] Oss / uitgeefbare grond
+[ORI] Oss / bouwregels bestemmingsplan
+[ORI] Oss / stedenbouwkundig kader
+[ORI] Oss / functieverruiming
+[ORI] Oss / binnenplanse afwijking
+[ORI] Oss / functiewijziging
+[ORI] Oss / afwijkingsbevoegdheid
+[ORI] Oss / gebruikswijziging
+[ORI] Oss / planologische medewerking
+[ORI] Oss / uitbreiding gebruiksmogelijkheden
+[ORI] Oss / bestemmingswijziging
+[ORI] Oss / omgevingsplanactiviteit
+[ORI] Oss / vestigingsbeleid
+[ORI] Oss / economische visie
+[ORI] Oss / vestigingsklimaat
+[ORI] Oss / acquisitiebeleid
+[ORI] Oss / economische structuurversterking
+[ORI] Oss / bedrijfshuisvestingsvraag
+[ORI] Oss / acquisitiedoelstelling
+[ORI] Oss / omgevingsvergunning
+  + Programmabegroting ODBN 2027 -> 7:risico, 10:risico
+  + 01 Raad van State  dd 26 februari 2026  over Oss Bestem -> 10:risico
+  + Technische vragen Vidi Reo Hoornwerk -> 10:risico
+[ORI] Oss / maatwerkvoorschrift
+[ORI] Oss / doorlooptijd vergunning
+  + 2025-07-02 Warmtebronnenonderzoek Gemeente Oss -> 4:contextafhankelijk, 10:risico
+  + Programmabegroting 2026-2029 -> 2:kans, 9:contextafhankelijk
+  + Voortgangsrapportage RES Noordoost Brabant 2025 -> 4:risico, 10:risico, 9:kans
+  + Raadsinformatiebrief nieuwbouw zwembad, gebiedsontwikke -> 5:risico, 4:risico, 10:risico, 7:risico
+  + 2025-03-05 Spooragenda Oss 2025-2040 - eindconcept -> 2:kans, 5:kans, 1:kans, 6:contextafhankelijk
+[ORI] Oss / omgevingsvergunning verlening
+[ORI] Oss / zienswijzeprocedure
+[ORI] Oss / beroepsprocedure
+[ORI] Oss / coördinatiebesluit
+  + Besluit college over Ontwikkeling Circuitpark Nieuw Zev -> 2:kans, 8:kans, 10:risico
+[ORI] Oss / vergunningplichtig
+[ORI] Oss / Wabo-procedure
+  + 10 Raad van State  dd 6 februari 2026  over het bestemm -> 10:risico, 1:risico
+  + Bijlage toelichting MFA en woningbouw Looveltlaan Oss – -> 1:risico
+[ORI] Oss / bezwaartermijn
+  + Bijlage 4 Allonge Ontwikkelingsovereenkomst Raadhuislaa -> 7:risico, 10:risico, 6:contextafhankelijk
+  + 211208B&W voorstel.DOCX -> 2:kans, 6:contextafhankelijk
+[ORI] Oss / omgevingsplan
+  + Dossier 1078 besluitblad -> 2:contextafhankelijk, 9:contextafhankelijk
+  + Concept Motielijst -> 9:kans, 2:contextafhankelijk
+[ORI] Oss / bestemmingsplan
+[ORI] Oss / voorbereidingsbesluit
