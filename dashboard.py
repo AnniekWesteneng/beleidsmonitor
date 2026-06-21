@@ -361,6 +361,15 @@ with tab_adres:
                 st.caption("Bron: Kadastrale Kaart (Kadaster open data via PDOK). "
                            "Toont perceel en omvang; eigendomsgegevens (BRK) zijn "
                            "betaald en niet opgenomen.")
+                k1, k2 = st.columns(2)
+                k1.link_button("🔎 Eigendomsinformatie opvragen (Kadaster, betaald)",
+                               "https://www.kadaster.nl/producten/woning/eigendomsinformatie")
+                k2.link_button("🏢 Bekijk in BAG-viewer (gratis)",
+                               "https://bagviewer.kadaster.nl/")
+                st.caption(f"De naam van de eigenaar is privacygevoelig (AVG) en niet "
+                           f"automatisch op te halen. Via de Kadaster-knop vraag je voor "
+                           f"perceel **{p['aanduiding']}** een eigendomsafschrift aan "
+                           f"(~€2,85 per afschrift).")
             else:
                 st.caption(f"Kadaster: {kres.get('fout', 'geen perceel gevonden')}")
 
