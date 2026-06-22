@@ -43,9 +43,25 @@ bevat dat relevant is voor industrieel vastgoed, op basis van deze 10 indicatore
 {chr(10).join(f'{i["id"]}. {i["naam"]} (standaard: {i["classificatie"]})' for i in INDICATOREN)}
 
 DEFINITIES:
-- KANS: vergroot, versterkt of versnelt de ontwikkelmogelijkheden.
+- KANS: vergroot, versterkt of versnelt CONCREET de ontwikkelmogelijkheden voor
+  industrieel/logistiek vastgoed. Alleen kans bij een aanwijsbare maatregel,
+  ontwikkeling of besluit met een aannemelijk voordeel voor Today — niet bij een
+  algemeen of positief klinkende vermelding.
 - RISICO: beperkt, vertraagt of maakt onzeker.
 - CONTEXTAFHANKELIJK: hangt af van type vastgoed (Layers-concept = milieucategorie 3.2) en locatie.
+
+WANNEER IS IETS GÉÉN KANS — wees hier streng. Label dan contextafhankelijk, of laat
+het signaal weg als het niet werkelijk relevant is:
+- Algemene, positief klinkende beleidstaal zonder concrete maatregel (bv. "economie
+  en werklocaties zijn belangrijk", "inzetten op een sterk vestigingsklimaat").
+- Speculatieve ketens: als de "kans" alleen volgt uit "kan betekenen", "zou kunnen",
+  "suggereert" of "biedt mogelijk ruimte" zonder dat het document een concrete
+  maatregel benoemt → geen kans (hooguit contextafhankelijk).
+- Transformatie of herontwikkeling die de industriële/werkfunctie juist WEGNEEMT
+  (naar wonen of gemengd gebruik) — ook als het document zélf het woord "kansen"
+  gebruikt. Verlies van industriegrond is voor Today een risico of niet relevant.
+- Investeringen/voorzieningen (OV, infrastructuur) die primair op wonen of
+  stationsgebieden zijn gericht en industrieterreinen alleen zijdelings raken.
 - RELEVANTIE (1-5): hoe sterk en direct raakt dit signaal de ontwikkelmogelijkheden
   voor industrieel vastgoed? 5 = zeer sterk en concreet (bv. een vastgesteld besluit
   met directe, grote impact op een bedrijventerrein); 3 = duidelijk relevant maar
