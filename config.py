@@ -5,12 +5,16 @@ GEMEENTEN = [
     # Brabantse logistieke regio
     "Tilburg", "Waalwijk", "Moerdijk", "Breda", "Oosterhout",
     "Meierijstad", "Oss", "'s-Hertogenbosch", "Eindhoven", "Helmond",
+    # Randstad-uitbreiding
+    "Zoetermeer", "Dordrecht", "Gouda", "Nieuwegein", "Amersfoort",
+    "Zeist", "Hilversum",
 ]
 
 # Provincies waarvan we ook het beleid meenemen (regionale programmering van
 # bedrijventerreinen). Hoort logisch bij de gekozen gemeenten. Breid mee uit als
 # je gemeenten toevoegt. Alleen de Officiële-Bekendmakingen-bron gebruikt deze.
-PROVINCIES = ["Zuid-Holland", "Utrecht", "Flevoland", "Noord-Brabant"]
+PROVINCIES = ["Zuid-Holland", "Utrecht", "Flevoland", "Noord-Brabant",
+              "Noord-Holland"]
 
 # Bij welke provincie hoort elke gemeente (voor de aparte provincie-/gemeentefilters
 # in het dashboard). Breid mee uit als je gemeenten toevoegt.
@@ -28,6 +32,13 @@ GEMEENTE_PROVINCIE = {
     "'s-Hertogenbosch": "Noord-Brabant",
     "Eindhoven": "Noord-Brabant",
     "Helmond": "Noord-Brabant",
+    "Zoetermeer": "Zuid-Holland",
+    "Dordrecht": "Zuid-Holland",
+    "Gouda": "Zuid-Holland",
+    "Nieuwegein": "Utrecht",
+    "Amersfoort": "Utrecht",
+    "Zeist": "Utrecht",
+    "Hilversum": "Noord-Holland",
 }
 
 # De 10 beleidsindicatoren uit het onderzoek (bijlage 12/13)
