@@ -402,8 +402,10 @@ with tab_adres:
                             " (%)", ""), m.get("waarde", "?"))
                 if _func:
                     st.markdown("**Toegestane functie/categorie:** " + ", ".join(_func))
-                st.caption("Bron: Ruimtelijke Plannen (bestemmingsplan/omgevingsplan) — "
-                           "harde brondata, geen AI.")
+                st.caption("Bron: bestemmingsplan (nu het tijdelijk deel van het "
+                           "omgevingsplan) via de Ruimtelijke Plannen — harde brondata, "
+                           "geen AI. Ná 2024 vastgestelde omgevingsplan-wijzigingen "
+                           "kunnen afwijken; 'Regels op de kaart' is leidend.")
 
             # Kadastraal perceel (Kadaster open data via PDOK) op deze locatie.
             kres = kad.perceel_op_locatie(loc["rd_x"], loc["rd_y"])
