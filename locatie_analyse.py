@@ -12,25 +12,23 @@ AI-interpretatie. Het omgevingsplan zelf blijft leidend.
 import json
 
 from classificeer import _get_client, MODEL, INDICATOREN, _parse_json_antwoord
-from bronnen.omgevingsloket import (geocode_adres, onderwerpen_op_locatie,
-                                    perceelregels_op_locatie)
+from bronnen.omgevingsloket import geocode_adres, onderwerpen_op_locatie
+from bronnen.ruimtelijke_plannen import details_op_punt
 
 _IND = "\n".join(f'{i["id"]}. {i["naam"]}' for i in INDICATOREN)
 
 PROMPT = f"""Je bent een beleidsanalist voor Today Development, ontwikkelaar van
-industrieel/logistiek vastgoed. Je krijgt voor één locatie: (a) de thema's die er
-gelden en (b) de PERCEEL-SPECIFIEKE omgevingsplanregels — de letterlijke
-artikeltekst die juist op dit perceel van toepassing is. Duid wat dit concreet
-betekent voor industrieel vastgoed hier.
+industrieel/logistiek vastgoed. Je krijgt voor één locatie de CONCRETE planologische
+gegevens uit de Ruimtelijke Plannen / het omgevingsplan: de bestemming, de
+maatvoering (bv. maximum bouwhoogte, bebouwingspercentage), functie-/bouwaanduidingen
+(bv. toegestane milieucategorie), eventuele voorbereidingsbesluiten, plus de thema's
+die gelden. Duid wat dit betekent voor industrieel/logistiek vastgoed hier.
 
 Beoordeel in termen van deze indicatoren:
 {_IND}
 
-Baseer je op de aangeleverde regelteksten en thema's; verzin geen regels die er niet
-staan. Citeer concrete beperkingen die in de regels staan (bv. vergunningplicht,
-maximale maten, oppervlakte-/dieptegrenzen, toegestane functies, max. aantal
-bedrijven, een voorbereidingsbesluit). Staat een exacte waarde niet in de
-aangeleverde tekst, verzin die dan niet.
+Baseer je UITSLUITEND op de aangeleverde gegevens; verzin geen waarden die er niet
+staan. Verwijs concreet naar de bestemming, de maxima en de toegestane categorie.
 
 Geef een HELDER EINDOORDEEL of deze locatie kansrijk is voor industrieel/logistiek
 vastgoed (één oogopslag):
@@ -67,29 +65,35 @@ def analyseer_adres(adres: str) -> dict:
     loc = geocode_adres(adres)
     if not loc:
         return {"fout": "Adres niet gevonden."}
+
+    # Concrete planregels (bestemming, bouwhoogte, categorie, VB) — harde brondata.
+    rp = details_op_punt(loc["rd_x"], loc["rd_y"])
+    # Thema's uit het DSO voor extra context (lichte uitvraag; mag ontbreken).
     dso = onderwerpen_op_locatie(loc["rd_x"], loc["rd_y"])
-    if dso.get("fout"):
-        return {"locatie": loc, "fout": dso["fout"]}
+    themas = dso.get("themas", []) if not dso.get("fout") else []
 
-    regelingen, themas = dso["regelingen"], dso["themas"]
-    # Perceel-specifieke omgevingsplanregels (echte artikeltekst) ophalen.
-    pr = perceelregels_op_locatie(loc["rd_x"], loc["rd_y"])
-    perceelregels = pr.get("regels", [])
-
-    regelblok = "\n\n".join(
-        f"Regel ({r['expressie']}): {r['tekst']}" for r in perceelregels
-    ) or "(geen perceel-specifieke omgevingsplanregels gevonden op dit punt)"
+    best = rp.get("bestemmingen", [])
+    maat = rp.get("maatvoeringen", [])
+    func = rp.get("functieaanduidingen", [])
+    vb = rp.get("voorbereidingsbesluiten", [])
+    best_txt = ", ".join(b["naam"] for b in best if b.get("naam")) or "-"
+    maat_txt = "; ".join(f"{m.get('naam')}={m.get('waarde')}" for m in maat) or "-"
+    func_txt = ", ".join(func) or "-"
+    vb_txt = ", ".join(v["naam"] for v in vb) or "geen"
     inhoud = (
-        f"Locatie: {loc.get('weergavenaam')} (gemeente {loc.get('gemeente')})\n\n"
-        f"Thema's op deze locatie: {', '.join(themas) or '-'}\n\n"
-        f"Perceel-specifieke omgevingsplanregels (letterlijke tekst):\n\n{regelblok}"
+        f"Locatie: {loc.get('weergavenaam')} (gemeente {loc.get('gemeente')})\n"
+        f"Bestemming(en): {best_txt}\n"
+        f"Maatvoering: {maat_txt}\n"
+        f"Functie-/bouwaanduidingen: {func_txt}\n"
+        f"Voorbereidingsbesluiten: {vb_txt}\n"
+        f"Thema's (DSO): {', '.join(themas) or '-'}"
     )
 
     duiding = {"fout": "AI-duiding mislukt"}
     for poging in range(3):  # enkele hapering of formatfout opvangen
         try:
             b = _get_client().messages.create(
-                model=MODEL, max_tokens=1600,
+                model=MODEL, max_tokens=1400,
                 system=[{"type": "text", "text": PROMPT,
                          "cache_control": {"type": "ephemeral"}}],
                 messages=[{"role": "user", "content": inhoud}],
@@ -100,8 +104,7 @@ def analyseer_adres(adres: str) -> dict:
         except Exception as e:
             duiding = {"fout": f"AI-duiding mislukt: {type(e).__name__}"}
 
-    return {"locatie": loc, "regelingen": regelingen, "themas": themas,
-            "perceelregels": perceelregels, "duiding": duiding}
+    return {"locatie": loc, "planregels": rp, "themas": themas, "duiding": duiding}
 
 
 if __name__ == "__main__":

@@ -69,6 +69,9 @@ if _dso:
 _dso_prod = _secret("DSO_PROD_API_KEY")
 if _dso_prod:
     os.environ["DSO_PROD_API_KEY"] = _dso_prod
+_rp = _secret("RUIMTELIJKE_PLANNEN_API_KEY")
+if _rp:
+    os.environ["RUIMTELIJKE_PLANNEN_API_KEY"] = _rp
 
 
 def _wachtwoord_ok() -> bool:
@@ -379,9 +382,28 @@ with tab_adres:
                 st.warning(f"🟠 **Mogelijk interessant, mits voorwaarden** — {_kern}")
             elif _g == "ongeschikt":
                 st.error(f"🔴 **Weinig kansrijk voor industrieel vastgoed** — {_kern}")
-            _vb = (_d.get("voorbereidingsbesluit") or "").strip()
-            if _vb:
-                st.warning(f"⚠️ **Voorbereidingsbesluit van kracht** — {_vb}")
+            _pr = res.get("planregels") or {}
+            for _v in _pr.get("voorbereidingsbesluiten", []):
+                st.warning(f"⚠️ **Voorbereidingsbesluit van kracht** — {_v.get('naam')}")
+
+            # Harde planologische feiten op dit punt (Ruimtelijke Plannen).
+            _best = _pr.get("bestemmingen", [])
+            _maat = _pr.get("maatvoeringen", [])
+            _func = _pr.get("functieaanduidingen", [])
+            if _best or _maat or _func:
+                st.markdown("**🏗️ Planologische feiten op dit punt**")
+                if _best:
+                    st.markdown("**Bestemming:** " + ", ".join(
+                        b["naam"] for b in _best if b.get("naam")))
+                if _maat:
+                    cols = st.columns(min(len(_maat), 4))
+                    for i, m in enumerate(_maat[:4]):
+                        cols[i].metric(m.get("naam", "").replace(" (m)", "").replace(
+                            " (%)", ""), m.get("waarde", "?"))
+                if _func:
+                    st.markdown("**Toegestane functie/categorie:** " + ", ".join(_func))
+                st.caption("Bron: Ruimtelijke Plannen (bestemmingsplan/omgevingsplan) — "
+                           "harde brondata, geen AI.")
 
             # Kadastraal perceel (Kadaster open data via PDOK) op deze locatie.
             kres = kad.perceel_op_locatie(loc["rd_x"], loc["rd_y"])
@@ -427,23 +449,14 @@ with tab_adres:
                             st.markdown("**🔴 Risico's**")
                             for rsk in d.get("risicos", []) or ["—"]:
                                 st.markdown(f"- {rsk}")
-                    # De letterlijke perceel-specifieke regels uit het omgevingsplan.
-                    pregels = res.get("perceelregels", [])
-                    if pregels:
-                        with st.expander(f"📜 Letterlijke regels op dit perceel "
-                                         f"({len(pregels)})"):
-                            for pr in pregels:
-                                st.markdown(f"- _{pr['expressie']}_ — {pr['tekst']}")
-                    else:
-                        st.caption("ℹ️ Voor dit punt zijn (nog) geen perceel-specifieke "
-                                   "omgevingsplanregels via de DSO gevonden — de "
-                                   "bestemming staat bij deze gemeente mogelijk nog in "
-                                   "het 'tijdelijk deel'. De duiding is dan o.b.v. de "
-                                   "thema's; bekijk de exacte bestemming via 'Regels op "
-                                   "de kaart'.")
-                st.caption("Perceel-specifieke regels komen letterlijk uit het "
-                           "omgevingsplan (DSO). Voor de volledige context en kaart: "
-                           "open 'Regels op de kaart' hieronder.")
+                    if not (res.get("planregels") or {}).get("bestemmingen"):
+                        st.caption("ℹ️ Voor dit punt is geen digitale bestemming "
+                                   "gevonden in de Ruimtelijke Plannen; de duiding is "
+                                   "dan o.b.v. de thema's. Bekijk de bestemming via de "
+                                   "knop hieronder.")
+                st.caption("De planologische feiten komen uit de Ruimtelijke Plannen / "
+                           "het omgevingsplan; de duiding is een AI-interpretatie. Voor "
+                           "de volledige context en kaart: open 'Regels op de kaart'.")
             st.link_button("📖 Bekijk de exacte regels op deze plek (Regels op de kaart)",
                            "https://omgevingswet.overheid.nl/regels-op-de-kaart/")
 
