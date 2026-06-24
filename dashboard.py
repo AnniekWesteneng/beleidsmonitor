@@ -383,8 +383,18 @@ with tab_adres:
             elif _g == "ongeschikt":
                 st.error(f"🔴 **Weinig kansrijk voor industrieel vastgoed** — {_kern}")
             _pr = res.get("planregels") or {}
-            for _v in res.get("voorbereidingsbesluiten", []):
+            _vbs = res.get("voorbereidingsbesluiten", [])
+            for _v in _vbs:
                 st.warning(f"⚠️ **Voorbereidingsbesluit van kracht** — {_v.get('naam')}")
+            # Actualiteits-check via DSO: is de planologie hier in beweging?
+            if _vbs:
+                st.caption("🔎 DSO-actualiteitscheck: er loopt een voorbereidingsbesluit "
+                           "— de onderstaande bestemmingsplan-waarden kunnen worden "
+                           "gewijzigd. Bekijk de actuele/leidende regels via de knop onderaan.")
+            else:
+                st.caption("🔎 DSO-actualiteitscheck: geen voorbereidingsbesluit op dit "
+                           "punt — de bestemmingsplan-waarden zijn naar verwachting "
+                           "actueel. 'Regels op de kaart' blijft leidend.")
 
             # Harde planologische feiten op dit punt (Ruimtelijke Plannen).
             _best = _pr.get("bestemmingen", [])
@@ -459,7 +469,8 @@ with tab_adres:
                 st.caption("De planologische feiten komen uit de Ruimtelijke Plannen / "
                            "het omgevingsplan; de duiding is een AI-interpretatie. Voor "
                            "de volledige context en kaart: open 'Regels op de kaart'.")
-            st.link_button("📖 Bekijk de exacte regels op deze plek (Regels op de kaart)",
+            st.link_button("📖 Bekijk de actuele, leidende regels bij de bron "
+                           "(Regels op de kaart) — zoek op het adres",
                            "https://omgevingswet.overheid.nl/regels-op-de-kaart/")
 
             # Onze eigen signalen voor de gemeente van dit adres.
