@@ -118,6 +118,58 @@ def regels_op_adres(adres: str) -> dict:
     return res
 
 
+def _niveau(identificatie: str) -> tuple[str, str]:
+    """Leid het bestuursniveau af uit de regeling-identificatie (de 'maker')."""
+    try:
+        maker = identificatie.split("/act/")[1].split("/")[0]
+    except Exception:
+        return ("overig", "Overig")
+    if maker.startswith("gm"):
+        return ("gemeente", "Gemeente (omgevingsplan)")
+    if maker.startswith("pv"):
+        return ("provincie", "Provincie")
+    if maker.startswith("ws"):
+        return ("waterschap", "Waterschap")
+    if maker.startswith("mnre") or maker.startswith("rijk"):
+        return ("rijk", "Rijk")
+    return ("overig", "Overig")
+
+
+def onderwerpen_op_locatie(rd_x: float, rd_y: float) -> dict:
+    """Rijkere uitvraag op een RD-punt: per regeling het niveau, de activiteiten
+    en de thema's. Retourneert een gestructureerd overzicht voor analyse/weergave.
+
+    {"regelingen": [{niveau, niveau_label, identificatie, activiteiten:[namen],
+                     themas:[waarden]}...], "themas": [unieke thema's]} of {"fout":...}.
+    """
+    if not _key():
+        return {"fout": "Geen DSO-sleutel ingesteld (zet 'm in .env / secrets)."}
+    body = {"geometrie": {"type": "Point", "coordinates": [rd_x, rd_y]}}
+    try:
+        r = requests.post(_base() + "onderwerpen/_zoek", headers=_headers(),
+                          data=json.dumps(body), timeout=30)
+    except Exception as e:
+        return {"fout": f"netwerkfout: {type(e).__name__}"}
+    if r.status_code != 200:
+        return {"fout": f"DSO gaf HTTP {r.status_code}"}
+
+    regs = r.json().get("regelingen", [])
+    uit, alle_themas = [], set()
+    for reg in regs:
+        ident = reg.get("identificatie", "")
+        niveau, label = _niveau(ident)
+        acts = [a.get("naam") for a in reg.get("activiteiten", []) if a.get("naam")]
+        themas = [t.get("waarde") for t in reg.get("themas", [])
+                  if isinstance(t, dict) and t.get("waarde")]
+        alle_themas.update(themas)
+        uit.append({"niveau": niveau, "niveau_label": label,
+                    "identificatie": ident, "activiteiten": acts, "themas": themas})
+    # Sorteer: gemeente eerst, dan provincie, waterschap, rijk, overig.
+    volgorde = {"gemeente": 0, "provincie": 1, "waterschap": 2, "rijk": 3, "overig": 4}
+    uit.sort(key=lambda d: volgorde.get(d["niveau"], 9))
+    return {"regelingen": uit, "themas": sorted(alle_themas)}
+
+
 if __name__ == "__main__":
     import sys
     adres = " ".join(sys.argv[1:]) or "Atoomweg 50, Utrecht"

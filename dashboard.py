@@ -242,8 +242,9 @@ def _netcongestie(gemeenten_tuple):
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def _regels_op_adres(adres):
-    return olo.regels_op_adres(adres)
+def _analyseer_adres(adres):
+    from locatie_analyse import analyseer_adres
+    return analyseer_adres(adres)
 
 
 tab_signalen, tab_net, tab_adres, tab_chat = st.tabs(
@@ -338,14 +339,16 @@ with tab_net:
 
 # ========================= TAB: ZOEK OP ADRES ==============================
 with tab_adres:
-    st.markdown("Typ een adres → de **geldende omgevingsdocumenten** op die locatie "
-                "(uit het DSO/Omgevingsloket) plus onze kans/risico-signalen voor die gemeente.")
-    st.caption("ℹ️ DSO-data komt uit de productieomgeving van het Omgevingsloket — "
-               "de echte, geldende omgevingsdocumenten op deze locatie.")
+    st.markdown("Typ een adres → het **perceel**, de **geldende regels** op die locatie "
+                "(uit het DSO/Omgevingsloket) en een **AI-duiding van kansen en risico's** "
+                "voor industrieel vastgoed, plus onze eigen signalen voor die gemeente.")
+    st.caption("ℹ️ DSO-data komt uit de productieomgeving van het Omgevingsloket "
+               "(echte, geldende regels). De kans/risico-duiding is een AI-interpretatie "
+               "van die regels; het omgevingsplan zelf blijft leidend.")
     adres = st.text_input("Adres", placeholder="bv. Atoomweg 50, Utrecht")
     if adres:
-        with st.spinner("Adres opzoeken en DSO bevragen…"):
-            res = _regels_op_adres(adres)
+        with st.spinner("Adres opzoeken, DSO bevragen en analyseren…"):
+            res = _analyseer_adres(adres)
         loc = res.get("locatie")
         if not loc:
             st.warning(res.get("fout", "Adres niet gevonden."))
@@ -378,10 +381,45 @@ with tab_adres:
             if res.get("fout"):
                 st.info(f"DSO: {res['fout']}")
             else:
+                # AI-duiding: kansen / risico's / aandachtspunten voor deze locatie.
+                d = res.get("duiding") or {}
+                st.subheader("Kansen & risico's op deze locatie (AI-duiding)")
+                if d.get("fout"):
+                    st.info(d["fout"])
+                else:
+                    if d.get("samenvatting"):
+                        st.markdown(d["samenvatting"])
+                    dc1, dc2 = st.columns(2)
+                    with dc1:
+                        st.markdown("**🟢 Kansen**")
+                        for k in d.get("kansen", []) or ["—"]:
+                            st.markdown(f"- {k}")
+                    with dc2:
+                        st.markdown("**🔴 Risico's**")
+                        for rsk in d.get("risicos", []) or ["—"]:
+                            st.markdown(f"- {rsk}")
+                    if d.get("aandachtspunten"):
+                        with st.expander("🔍 Aandachtspunten / nader uitzoeken"):
+                            for a in d["aandachtspunten"]:
+                                st.markdown(f"- {a}")
+
+                # Onderliggende regels: per bestuursniveau + thema's.
                 regs = res.get("regelingen", [])
-                st.subheader(f"Geldende omgevingsdocumenten ({len(regs)})")
-                for reg in regs:
-                    st.markdown(f"- {reg['naam']}")
+                themas = res.get("themas", [])
+                if themas:
+                    st.caption("**Thema's op deze locatie:** " + ", ".join(themas))
+                with st.expander(f"📑 Geldende regels per niveau ({len(regs)} regelingen)"):
+                    for niv in ("gemeente", "provincie", "waterschap", "rijk", "overig"):
+                        groep = [r for r in regs if r["niveau"] == niv]
+                        if not groep:
+                            continue
+                        st.markdown(f"**{groep[0]['niveau_label']}** ({len(groep)})")
+                        for r in groep:
+                            acts = r["activiteiten"]
+                            if acts:
+                                toon = ", ".join(acts[:8])
+                                meer = f" … +{len(acts)-8} meer" if len(acts) > 8 else ""
+                                st.caption(f"• {len(acts)} activiteiten: {toon}{meer}")
             st.link_button("Open 'Regels op de kaart' (officieel)",
                            "https://omgevingswet.overheid.nl/regels-op-de-kaart/")
 
