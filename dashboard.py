@@ -79,14 +79,20 @@ def _wachtwoord_ok() -> bool:
         return True  # geen wachtwoord ingesteld -> vrij toegankelijk
     if st.session_state.get("auth_ok"):
         return True
-    st.markdown("#### 🔒 Beveiligde toegang")
-    ingevoerd = st.text_input("Wachtwoord", type="password")
-    if ingevoerd:
-        if ingevoerd == juist:
-            st.session_state.auth_ok = True
-            st.rerun()
-        else:
-            st.error("Onjuist wachtwoord.")
+    # Net, gecentreerd inlogscherm. Een form checkt pas bij verzenden (niet bij
+    # elke toetsaanslag), wat het 'flitsen' tegengaat.
+    _, mid, _ = st.columns([1, 2, 1])
+    with mid:
+        st.markdown("#### 🔒 Beveiligde toegang")
+        with st.form("login_form", clear_on_submit=False, border=True):
+            ingevoerd = st.text_input("Wachtwoord", type="password")
+            verzonden = st.form_submit_button("Inloggen", use_container_width=True)
+        if verzonden:
+            if ingevoerd == juist:
+                st.session_state.auth_ok = True
+                st.rerun()
+            else:
+                st.error("Onjuist wachtwoord.")
     return False
 
 
