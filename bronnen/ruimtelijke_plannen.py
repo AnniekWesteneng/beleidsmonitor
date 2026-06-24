@@ -56,8 +56,12 @@ def details_op_punt(rd_x: float, rd_y: float) -> dict:
                 "functieaanduidingen": [], "bouwaanduidingen": [],
                 "voorbereidingsbesluiten": []}
 
+    # Voorbereidingsbesluiten, maar GEEN landelijke (Rijk, IMRO-code 0000) — die
+    # hebben een enorm werkingsgebied (bv. hyperscale datacenters) en zijn geen
+    # perceel-specifiek signaal; ze duiken anders bij half Nederland op als ruis.
     voorber = [{"naam": p.get("naam"), "id": p.get("id")}
-               for p in plannen if p.get("type") == "voorbereidingsbesluit"]
+               for p in plannen if p.get("type") == "voorbereidingsbesluit"
+               and not str(p.get("id", "")).startswith("NL.IMRO.0000.")]
     plan_regels = [p for p in plannen if p.get("type") in PLAN_MET_REGELS]
 
     bestemmingen, maatvoeringen, functie_aand, bouw_aand = [], [], [], []

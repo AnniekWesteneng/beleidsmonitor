@@ -213,13 +213,16 @@ def voorbeschermingsregels_op_punt(rd_x: float, rd_y: float) -> list[dict]:
                           data=json.dumps(body), timeout=30).json()
     except Exception:
         return []
-    hrefs = [(r.get("_links", {}).get("regeling", {}) or {}).get("href")
+    # (identificatie, href) per regeling. Landelijke (Rijk, /act/mnre...) besluiten
+    # slaan we over: die hebben een enorm werkingsgebied en zijn geen perceelsignaal.
+    paren = [(r.get("identificatie", ""),
+              (r.get("_links", {}).get("regeling", {}) or {}).get("href"))
              for r in j.get("regelingen", [])]
-    hrefs = [h for h in hrefs if h]
+    paren = [(i, h) for i, h in paren if h and "/act/mnre" not in i]
 
-    def _type_en_titel(href):
+    def _type_en_titel(par):
         try:
-            d = requests.get(href, headers=_headers(), timeout=20).json()
+            d = requests.get(par[1], headers=_headers(), timeout=20).json()
             return d.get("type", {}), d.get("officieleTitel") or d.get("citeerTitel")
         except Exception:
             return {}, None
@@ -227,7 +230,7 @@ def voorbeschermingsregels_op_punt(rd_x: float, rd_y: float) -> list[dict]:
     uit = []
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=8) as ex:
-        for typ, titel in ex.map(_type_en_titel, hrefs):
+        for typ, titel in ex.map(_type_en_titel, paren):
             waarde = (typ or {}).get("waarde", "")
             if "Voorbescherming" in waarde or "Voorbereidingsbesluit" in waarde:
                 uit.append({"naam": titel or waarde, "type": waarde})
