@@ -146,36 +146,41 @@ st.markdown(f"""
 if not _wachtwoord_ok():
     st.stop()
 
-conn = sqlite3.connect(DB_PATH)
-try:
-    df = pd.read_sql("SELECT * FROM signalen", conn)
-except Exception:
-    df = pd.DataFrame()
+@st.cache_data(show_spinner=False)
+def _laad_data(_mtime: float):
+    """Lees de database één keer in en bouw de hulpkolommen. Gecachet op de
+    wijzigingstijd van het db-bestand: bij filteren wordt niets herberekend,
+    en na een nieuwe pipeline-run ververst de cache automatisch."""
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        d = pd.read_sql("SELECT * FROM signalen", conn)
+    except Exception:
+        return pd.DataFrame()
+    finally:
+        conn.close()
+    if d.empty:
+        return d
+    for kol in ["citaat", "pagina", "relevantie"]:
+        if kol not in d.columns:
+            d[kol] = None
+    d["_datum"] = pd.to_datetime(d["datum"], errors="coerce")
+    d["_zoektekst"] = (d["titel"].fillna("") + " " + d["samenvatting"].fillna("")
+                       + " " + d["onderbouwing"].fillna("")).str.lower()
+    d["_doc"] = d["url"].where(d["url"].astype(bool), d["titel"])
+    pure_prov = set(PROVINCIES) - set(GEMEENTE_PROVINCIE)
+    d["_niveau"] = d["gemeente"].apply(
+        lambda g: "provincie" if g in pure_prov else "gemeente")
+    d["_provincie"] = d["gemeente"].apply(
+        lambda g: g if g in pure_prov else GEMEENTE_PROVINCIE.get(g, "Overig"))
+    return d
+
+
+df = _laad_data(os.path.getmtime(DB_PATH) if os.path.exists(DB_PATH) else 0)
 
 if df.empty:
     st.info("Nog geen signalen in de database. Draai eerst de pipeline:  "
             "`python pipeline.py`")
     st.stop()
-
-# Zorg dat nieuwere kolommen bestaan, ook als de database nog niet gemigreerd is.
-for _kol in ["citaat", "pagina", "relevantie"]:
-    if _kol not in df.columns:
-        df[_kol] = None
-
-# Hulpkolommen
-df["_datum"] = pd.to_datetime(df["datum"], errors="coerce")
-df["_zoektekst"] = (df["titel"].fillna("") + " " + df["samenvatting"].fillna("")
-                    + " " + df["onderbouwing"].fillna("")).str.lower()
-# Documentsleutel: gelijke url = zelfde document (anders op titel terugvallen).
-df["_doc"] = df["url"].where(df["url"].astype(bool), df["titel"])
-
-# Niveau (gemeente vs provincie) en bijbehorende provincie afleiden.
-# Provincienamen die GEEN gemeente zijn = provinciaal-niveau signalen.
-_PURE_PROVINCIES = set(PROVINCIES) - set(GEMEENTE_PROVINCIE)
-df["_niveau"] = df["gemeente"].apply(
-    lambda g: "provincie" if g in _PURE_PROVINCIES else "gemeente")
-df["_provincie"] = df["gemeente"].apply(
-    lambda g: g if g in _PURE_PROVINCIES else GEMEENTE_PROVINCIE.get(g, "Overig"))
 
 
 def relevantie_sterren(waarde) -> str:
@@ -306,9 +311,18 @@ with tab_signalen:
         else:  # Relevantie (hoog → laag)
             agg = agg.sort_values("max_rel", ascending=False, na_position="last")
 
+        # Niet eindeloos veel kaarten renderen (dat maakt de pagina traag).
+        LIMIET = 150
+        totaal_docs = len(agg)
+        st.caption(f"{totaal_docs} documenten · {len(filtered)} signalen"
+                   + (f" — toont de eerste {LIMIET}; verfijn de filters voor de rest."
+                      if totaal_docs > LIMIET else ""))
+        # Eén keer groeperen (i.p.v. de hele tabel per document opnieuw doorzoeken).
+        doc_groepen = {k: v for k, v in filtered.groupby("_doc")}
+
         # Eén kaart per document, met alle indicator-signalen erin.
-        for _, doc in agg.iterrows():
-            rijen = filtered[filtered["_doc"] == doc["_doc"]].sort_values(
+        for _, doc in agg.head(LIMIET).iterrows():
+            rijen = doc_groepen[doc["_doc"]].sort_values(
                 "relevantie", ascending=False, na_position="last")
             eerste = rijen.iloc[0]
             dots = "".join(dict.fromkeys(kleuren.get(c, "⚪") for c in rijen.classificatie))
