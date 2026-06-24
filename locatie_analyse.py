@@ -12,7 +12,8 @@ AI-interpretatie. Het omgevingsplan zelf blijft leidend.
 import json
 
 from classificeer import _get_client, MODEL, INDICATOREN, _parse_json_antwoord
-from bronnen.omgevingsloket import geocode_adres, onderwerpen_op_locatie
+from bronnen.omgevingsloket import (geocode_adres, onderwerpen_op_locatie,
+                                    voorbeschermingsregels_op_punt)
 from bronnen.ruimtelijke_plannen import details_op_punt
 
 _IND = "\n".join(f'{i["id"]}. {i["naam"]}' for i in INDICATOREN)
@@ -75,7 +76,16 @@ def analyseer_adres(adres: str) -> dict:
     best = rp.get("bestemmingen", [])
     maat = rp.get("maatvoeringen", [])
     func = rp.get("functieaanduidingen", [])
-    vb = rp.get("voorbereidingsbesluiten", [])
+    # Voorbereidingsbesluiten: DSO (actueel, ook ná 2024) + Ruimtelijke Plannen,
+    # ontdubbeld op naam. DSO is leidend en future-proof.
+    vb_namen, vb = set(), []
+    for bron in (voorbeschermingsregels_op_punt(loc["rd_x"], loc["rd_y"]),
+                 rp.get("voorbereidingsbesluiten", [])):
+        for v in bron:
+            naam = (v.get("naam") or "").strip()
+            if naam and naam.lower() not in vb_namen:
+                vb_namen.add(naam.lower())
+                vb.append({"naam": naam})
     best_txt = ", ".join(b["naam"] for b in best if b.get("naam")) or "-"
     maat_txt = "; ".join(f"{m.get('naam')}={m.get('waarde')}" for m in maat) or "-"
     func_txt = ", ".join(func) or "-"
@@ -104,7 +114,8 @@ def analyseer_adres(adres: str) -> dict:
         except Exception as e:
             duiding = {"fout": f"AI-duiding mislukt: {type(e).__name__}"}
 
-    return {"locatie": loc, "planregels": rp, "themas": themas, "duiding": duiding}
+    return {"locatie": loc, "planregels": rp, "themas": themas,
+            "voorbereidingsbesluiten": vb, "duiding": duiding}
 
 
 if __name__ == "__main__":

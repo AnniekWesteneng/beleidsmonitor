@@ -383,7 +383,7 @@ with tab_adres:
             elif _g == "ongeschikt":
                 st.error(f"🔴 **Weinig kansrijk voor industrieel vastgoed** — {_kern}")
             _pr = res.get("planregels") or {}
-            for _v in _pr.get("voorbereidingsbesluiten", []):
+            for _v in res.get("voorbereidingsbesluiten", []):
                 st.warning(f"⚠️ **Voorbereidingsbesluit van kracht** — {_v.get('naam')}")
 
             # Harde planologische feiten op dit punt (Ruimtelijke Plannen).

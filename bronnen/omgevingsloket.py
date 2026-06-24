@@ -200,6 +200,40 @@ def perceelregels_op_locatie(rd_x: float, rd_y: float, max_regels: int = 25) -> 
     return {"regels": regels[:max_regels], "gemeente_breed": gemeente_breed}
 
 
+def voorbeschermingsregels_op_punt(rd_x: float, rd_y: float) -> list[dict]:
+    """Geldende voorbereidingsbesluiten/voorbeschermingsregels op een RD-punt,
+    uit het DSO (type 'Voorbeschermingsregels Omgevingsplan'). Vangt — anders dan
+    Ruimtelijke Plannen — ook NIEUWE (na 2024) voorbereidingsbesluiten.
+    """
+    if not _key():
+        return []
+    body = {"geometrie": {"type": "Point", "coordinates": [rd_x, rd_y]}}
+    try:
+        j = requests.post(_base() + "onderwerpen/_zoek", headers=_headers(),
+                          data=json.dumps(body), timeout=30).json()
+    except Exception:
+        return []
+    hrefs = [(r.get("_links", {}).get("regeling", {}) or {}).get("href")
+             for r in j.get("regelingen", [])]
+    hrefs = [h for h in hrefs if h]
+
+    def _type_en_titel(href):
+        try:
+            d = requests.get(href, headers=_headers(), timeout=20).json()
+            return d.get("type", {}), d.get("officieleTitel") or d.get("citeerTitel")
+        except Exception:
+            return {}, None
+
+    uit = []
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        for typ, titel in ex.map(_type_en_titel, hrefs):
+            waarde = (typ or {}).get("waarde", "")
+            if "Voorbescherming" in waarde or "Voorbereidingsbesluit" in waarde:
+                uit.append({"naam": titel or waarde, "type": waarde})
+    return uit
+
+
 def _niveau(identificatie: str) -> tuple[str, str]:
     """Leid het bestuursniveau af uit de regeling-identificatie (de 'maker')."""
     try:
