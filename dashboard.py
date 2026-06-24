@@ -186,45 +186,43 @@ def relevantie_sterren(waarde) -> str:
     return "★" * n + "☆" * (5 - n)
 
 
-# --- Filters in de zijbalk ---
+# --- Filters in de zijbalk (leeg = alles, zodat er geen lange chip-stapels staan) ---
+ALLE_CLS = ["kans", "risico", "contextafhankelijk"]
+ALLE_IND = [i["id"] for i in INDICATOREN]
 with st.sidebar:
     st.header("Filters")
-    zoek = st.text_input("🔍 Zoeken", placeholder="bv. netcongestie, Binckhorst")
+    zoek = st.text_input("Zoeken", placeholder="bv. netcongestie, Binckhorst")
 
     prov_opties = sorted(df["_provincie"].dropna().unique())
-    prov_sel = st.multiselect("Provincie", prov_opties, default=prov_opties)
-    # Gemeenten (geen provinciaal niveau) binnen de gekozen provincie(s).
+    prov_sel = st.multiselect("Provincie", prov_opties, placeholder="alle") or prov_opties
     gem_opties = sorted(df.loc[(df["_niveau"] == "gemeente") &
                                (df["_provincie"].isin(prov_sel)), "gemeente"].dropna().unique())
-    gem = st.multiselect("Gemeente", gem_opties, default=gem_opties)
-    cls = st.multiselect("Classificatie", ["kans", "risico", "contextafhankelijk"],
-                         default=["kans", "risico", "contextafhankelijk"])
+    gem = st.multiselect("Gemeente", gem_opties, placeholder="alle") or gem_opties
+    cls = st.multiselect("Classificatie", ALLE_CLS, placeholder="alle") or ALLE_CLS
 
     aantal_per_ind = df.indicator_id.dropna().astype(int).value_counts().to_dict()
     ind_opties = {f"{indicator_label(i['id'])}  ({aantal_per_ind.get(i['id'], 0)})": i["id"]
                   for i in INDICATOREN}
-    ind_sel_labels = st.multiselect("Indicator", list(ind_opties.keys()),
-                                    default=list(ind_opties.keys()))
-    ind_sel_ids = [ind_opties[l] for l in ind_sel_labels]
+    ind_sel_labels = st.multiselect("Indicator", list(ind_opties.keys()), placeholder="alle")
+    ind_sel_ids = [ind_opties[l] for l in ind_sel_labels] or ALLE_IND
 
-    min_rel = st.slider("Minimale relevantie (★)", 1, 5, 4,
-                        help="Standaard 4: alleen sterke signalen. Zet op 1 om alles te zien.")
-
-    # Datumbereik
-    geldige = df["_datum"].dropna()
-    van = tot = None
-    if not geldige.empty:
-        dmin, dmax = geldige.min().date(), geldige.max().date()
-        keuze = st.date_input("Periode", value=(dmin, dmax),
-                              min_value=dmin, max_value=dmax)
-        if isinstance(keuze, (tuple, list)) and len(keuze) == 2:
-            van, tot = keuze
-        else:
-            van, tot = dmin, dmax
-
-    sorteer = st.selectbox("Sorteren op",
+    min_rel = st.slider("Min. relevantie", 1, 5, 4,
+                        help="Standaard 4: alleen sterke signalen. Zet op 1 voor alles.")
+    sorteer = st.selectbox("Sorteren",
                            ["Relevantie (hoog → laag)", "Relevantie (laag → hoog)",
                             "Datum (nieuw → oud)", "Gemeente (A → Z)"])
+
+    van = tot = None
+    geldige = df["_datum"].dropna()
+    with st.expander("Periode"):
+        if not geldige.empty:
+            dmin, dmax = geldige.min().date(), geldige.max().date()
+            keuze = st.date_input("Periode", value=(dmin, dmax), min_value=dmin,
+                                  max_value=dmax, label_visibility="collapsed")
+            if isinstance(keuze, (tuple, list)) and len(keuze) == 2:
+                van, tot = keuze
+            else:
+                van, tot = dmin, dmax
 
 # --- Filteren ---
 mask = (
