@@ -43,19 +43,45 @@ def _base() -> str:
     return PROD_BASE if _is_prod() else PRE_BASE
 
 
-def geocode_adres(adres: str) -> dict | None:
-    """Zet een adres om naar RD-coördinaat + gemeente via PDOK. None bij geen hit."""
+def _pdok_zoek(q: str, fq: list[str]) -> dict | None:
+    """Eén PDOK-bevraging; geeft de eerste doc terug of None."""
+    params = {"q": q, "rows": 1,
+              "fl": "weergavenaam,centroide_rd,gemeentenaam,type"}
+    if fq:
+        params["fq"] = fq
     try:
-        r = requests.get(PDOK, params={
-            "q": adres, "rows": 1,
-            "fl": "weergavenaam,centroide_rd,gemeentenaam,type"},
-            headers=UA, timeout=20)
+        r = requests.get(PDOK, params=params, headers=UA, timeout=20)
         docs = r.json().get("response", {}).get("docs", [])
     except Exception:
         return None
-    if not docs:
+    return docs[0] if docs else None
+
+
+def geocode_adres(adres: str) -> dict | None:
+    """Zet een adres om naar RD-coördinaat + gemeente via PDOK. None bij geen hit.
+
+    Verbeterd: filtert op echte adressen (type:adres) zodat het punt op het pand
+    landt i.p.v. op de weg, en — als het adres een gemeente bevat (na de komma) —
+    op die gemeente, zodat een niet-bestaand adres niet stilletjes in een andere
+    gemeente belandt. Valt netjes terug als dat niets oplevert.
+    """
+    gem = adres.split(",")[-1].strip() if "," in adres else ""
+    # Heuristiek: alleen als het laatste deel op een gemeentenaam lijkt (geen cijfers).
+    gem = gem if gem and not any(c.isdigit() for c in gem) else ""
+
+    pogingen = []
+    if gem:
+        pogingen.append((adres, ["type:adres", f'gemeentenaam:"{gem}"']))
+    pogingen.append((adres, ["type:adres"]))
+    pogingen.append((adres, []))  # laatste vangnet: vrije zoektocht
+
+    d = None
+    for q, fq in pogingen:
+        d = _pdok_zoek(q, fq)
+        if d:
+            break
+    if not d:
         return None
-    d = docs[0]
     m = re.match(r"POINT\(([\d.]+) ([\d.]+)\)", d.get("centroide_rd", "") or "")
     if not m:
         return None
