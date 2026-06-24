@@ -27,21 +27,27 @@ def _headers() -> dict:
             "Content-Crs": "epsg:28992", "Accept-Crs": "epsg:28992"}
 
 
-def _zoek(pad: str, rd_x: float, rd_y: float) -> list:
+def _zoek(pad: str, rd_x: float, rd_y: float, max_paginas: int = 4) -> list:
+    """Zoek op punt en haal ALLE pagina's op (pageSize 50). Zonder paginering mis
+    je bij drukke locaties het bestemmingsplan dat achter veel provinciale
+    verordeningen staat."""
     body = {"_geo": {"contains": {"type": "Point", "coordinates": [rd_x, rd_y]}}}
-    try:
-        r = requests.post(BASE + pad, headers=_headers(),
-                          data=json.dumps(body), timeout=30)
-    except Exception:
-        return []
-    if r.status_code != 200:
-        return []
-    emb = r.json().get("_embedded", {})
-    # _embedded heeft één sleutel met de lijst.
-    for v in emb.values():
-        if isinstance(v, list):
-            return v
-    return []
+    uit = []
+    for pagina in range(1, max_paginas + 1):
+        try:
+            r = requests.post(f"{BASE}{pad}?page={pagina}&pageSize=50",
+                              headers=_headers(), data=json.dumps(body), timeout=30)
+        except Exception:
+            break
+        if r.status_code != 200:
+            break
+        j = r.json()
+        lijst = next((v for v in j.get("_embedded", {}).values()
+                      if isinstance(v, list)), [])
+        uit.extend(lijst)
+        if not j.get("_links", {}).get("next"):
+            break
+    return uit
 
 
 def details_op_punt(rd_x: float, rd_y: float) -> dict:

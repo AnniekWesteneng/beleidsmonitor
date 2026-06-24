@@ -21,3 +21,5 @@ Thumbs.db
 
 # Logbestanden van runs
 *.log
+_test_adressen.py
+_test_adressen.out

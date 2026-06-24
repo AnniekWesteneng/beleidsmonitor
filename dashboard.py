@@ -401,13 +401,15 @@ with tab_adres:
 
             # Harde planologische feiten op dit punt (Ruimtelijke Plannen).
             _best = _pr.get("bestemmingen", [])
+            _enkel = [b for b in _best if b.get("type") == "enkelbestemming"]
+            _dubbel = [b for b in _best if b.get("type") != "enkelbestemming"]
             _maat = _pr.get("maatvoeringen", [])
             _func = _pr.get("functieaanduidingen", [])
-            if _best or _maat or _func:
+            if _enkel or _maat or _func or _dubbel:
                 st.markdown("**🏗️ Planologische feiten op dit punt**")
-                if _best:
+                if _enkel:
                     st.markdown("**Bestemming:** " + ", ".join(
-                        b["naam"] for b in _best if b.get("naam")))
+                        dict.fromkeys(b["naam"] for b in _enkel if b.get("naam"))))
                 if _maat:
                     cols = st.columns(min(len(_maat), 4))
                     for i, m in enumerate(_maat[:4]):
@@ -415,6 +417,13 @@ with tab_adres:
                             " (%)", ""), m.get("waarde", "?"))
                 if _func:
                     st.markdown("**Toegestane functie/categorie:** " + ", ".join(_func))
+                if _dubbel and not _enkel:
+                    st.markdown("_Alleen dubbelbestemmingen gevonden (geen "
+                                "hoofdbestemming): " + ", ".join(dict.fromkeys(
+                                    b["naam"] for b in _dubbel if b.get("naam"))) + "_")
+                elif _dubbel:
+                    st.caption("Dubbelbestemmingen: " + ", ".join(dict.fromkeys(
+                        b["naam"] for b in _dubbel if b.get("naam"))))
                 st.caption("Bron: bestemmingsplan (nu het tijdelijk deel van het "
                            "omgevingsplan) via de Ruimtelijke Plannen — harde brondata, "
                            "geen AI. Ná 2024 vastgestelde omgevingsplan-wijzigingen "

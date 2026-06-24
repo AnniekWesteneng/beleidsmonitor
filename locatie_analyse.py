@@ -47,9 +47,12 @@ vastgoed (één oogopslag):
   externe veiligheid, geluid, erfgoed, archeologie) die je eerst moet uitzoeken.
 - "ongeschikt": uit de gegevens blijkt een echte beperking (bv. bestemming wonen/
   natuur/beschermd, of een regel die industrie uitsluit) → weinig kansrijk.
-- "onbekend": er is GEEN bestemming en GEEN maatvoering aangeleverd → te weinig
-  gegevens om te oordelen. Gebruik dit i.p.v. "ongeschikt"; concludeer NOOIT
-  "ongeschikt" louter omdat gegevens ontbreken.
+- "onbekend": er is GEEN hoofdbestemming (enkelbestemming) én GEEN maatvoering
+  aangeleverd → te weinig gegevens om te oordelen. Gebruik dit i.p.v. "ongeschikt";
+  concludeer NOOIT "ongeschikt" louter omdat gegevens ontbreken. Let op:
+  dubbelbestemmingen (Waarde-archeologie, grondwater, "Openbare ruimte",
+  "Kostenverhaalsgebied" e.d.) zijn GEEN hoofdbestemming — baseer het eindoordeel
+  daar niet op; als alleen die er zijn, is het "onbekend".
 Geef ook "kernpunt": één korte zin met de doorslaggevende reden.
 
 Zet "voorbereidingsbesluit" op een korte omschrijving ALS uit de regels blijkt dat
@@ -86,6 +89,8 @@ def analyseer_adres(adres: str) -> dict:
     themas = dso.get("themas", []) if not dso.get("fout") else []
 
     best = rp.get("bestemmingen", [])
+    enkel = [b for b in best if b.get("type") == "enkelbestemming"]
+    dubbel = [b for b in best if b.get("type") != "enkelbestemming"]
     maat = rp.get("maatvoeringen", [])
     func = rp.get("functieaanduidingen", [])
     # Voorbereidingsbesluiten: DSO (actueel, ook ná 2024) + Ruimtelijke Plannen,
@@ -109,13 +114,15 @@ def analyseer_adres(adres: str) -> dict:
             if naam and kern not in vb_kernen:
                 vb_kernen.add(kern)
                 vb.append({"naam": naam})
-    best_txt = ", ".join(b["naam"] for b in best if b.get("naam")) or "-"
+    enkel_txt = ", ".join(b["naam"] for b in enkel if b.get("naam")) or "-"
+    dubbel_txt = ", ".join(b["naam"] for b in dubbel if b.get("naam")) or "-"
     maat_txt = "; ".join(f"{m.get('naam')}={m.get('waarde')}" for m in maat) or "-"
     func_txt = ", ".join(func) or "-"
     vb_txt = ", ".join(v["naam"] for v in vb) or "geen"
     inhoud = (
         f"Locatie: {loc.get('weergavenaam')} (gemeente {loc.get('gemeente')})\n"
-        f"Bestemming(en): {best_txt}\n"
+        f"Hoofdbestemming (enkelbestemming): {enkel_txt}\n"
+        f"Dubbelbestemmingen (Waarde-/beschermings-lagen, GEEN hoofdbestemming): {dubbel_txt}\n"
         f"Maatvoering: {maat_txt}\n"
         f"Functie-/bouwaanduidingen: {func_txt}\n"
         f"Voorbereidingsbesluiten: {vb_txt}\n"
