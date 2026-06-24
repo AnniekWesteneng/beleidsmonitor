@@ -11,7 +11,7 @@ plantekst. Het omgevingsplan zelf blijft leidend.
 """
 import json
 
-from classificeer import _get_client, MODEL, INDICATOREN
+from classificeer import _get_client, MODEL, INDICATOREN, _parse_json_antwoord
 from bronnen.omgevingsloket import geocode_adres, onderwerpen_op_locatie
 
 _IND = "\n".join(f'{i["id"]}. {i["naam"]}' for i in INDICATOREN)
@@ -31,11 +31,13 @@ industrie/logistiek opleveren, en risico's die de ontwikkeling echt beperken
 cultureel erfgoed). Baseer je op de aangeleverde activiteiten/thema's; verzin geen
 regels die er niet staan. Als iets onduidelijk is, benoem het als aandachtspunt.
 
-Antwoord UITSLUITEND met JSON:
+Houd het beknopt: maximaal 5 punten per lijst, elk één korte zin.
+
+Antwoord UITSLUITEND met JSON, geen tekst eromheen:
 {{"samenvatting": "<2-3 zinnen>",
-  "kansen": ["<kort, concreet>", ...],
-  "risicos": ["<kort, concreet>", ...],
-  "aandachtspunten": ["<kort>", ...]}}"""
+  "kansen": ["<kort, concreet>"],
+  "risicos": ["<kort, concreet>"],
+  "aandachtspunten": ["<kort>"]}}"""
 
 
 def analyseer_adres(adres: str) -> dict:
@@ -73,13 +75,12 @@ def analyseer_adres(adres: str) -> dict:
     duiding = None
     try:
         b = _get_client().messages.create(
-            model=MODEL, max_tokens=900,
+            model=MODEL, max_tokens=1400,
             system=[{"type": "text", "text": PROMPT,
                      "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": inhoud}],
         )
-        t = b.content[0].text.strip().replace("```json", "").replace("```", "").strip()
-        duiding = json.loads(t)
+        duiding = _parse_json_antwoord(b.content[0].text.strip())
     except Exception as e:
         duiding = {"fout": f"AI-duiding mislukt: {type(e).__name__}"}
 
