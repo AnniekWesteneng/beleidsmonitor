@@ -189,15 +189,28 @@ def relevantie_sterren(waarde) -> str:
 # --- Filters in de zijbalk (leeg = alles, zodat er geen lange chip-stapels staan) ---
 ALLE_CLS = ["kans", "risico", "contextafhankelijk"]
 ALLE_IND = [i["id"] for i in INDICATOREN]
+
+
+def _sync_provincie():
+    """Als er gemeenten gekozen zijn, zet het provinciefilter automatisch op de
+    bijbehorende provincie(s) — zo blijft de selectie consistent."""
+    gems = st.session_state.get("f_gem") or []
+    provs = sorted({GEMEENTE_PROVINCIE[g] for g in gems if g in GEMEENTE_PROVINCIE})
+    if provs:
+        st.session_state["f_prov"] = provs
+
+
 with st.sidebar:
     st.header("Filters")
     zoek = st.text_input("Zoeken", placeholder="bv. netcongestie, Binckhorst")
 
     prov_opties = sorted(df["_provincie"].dropna().unique())
-    prov_sel = st.multiselect("Provincie", prov_opties, placeholder="alle") or prov_opties
+    prov_sel = st.multiselect("Provincie", prov_opties, placeholder="alle",
+                              key="f_prov") or prov_opties
     gem_opties = sorted(df.loc[(df["_niveau"] == "gemeente") &
                                (df["_provincie"].isin(prov_sel)), "gemeente"].dropna().unique())
-    gem = st.multiselect("Gemeente", gem_opties, placeholder="alle") or gem_opties
+    gem = st.multiselect("Gemeente", gem_opties, placeholder="alle", key="f_gem",
+                         on_change=_sync_provincie) or gem_opties
     cls = st.multiselect("Classificatie", ALLE_CLS, placeholder="alle") or ALLE_CLS
 
     aantal_per_ind = df.indicator_id.dropna().astype(int).value_counts().to_dict()
