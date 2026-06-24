@@ -553,32 +553,32 @@ with tab_chat:
     if "chatgeschiedenis" not in st.session_state:
         st.session_state.chatgeschiedenis = []
 
-    # Toon de gesprekgeschiedenis.
+    # Schone vraag-antwoord-weergave (geen chatbubbels/avatars).
     for m in st.session_state.chatgeschiedenis:
-        with st.chat_message(m["role"]):
-            st.markdown(_chat_md(m["content"]) if m["role"] == "assistant"
-                        else m["content"])
+        if m["role"] == "user":
+            st.markdown(f"**{m['content']}**")
+        else:
+            st.markdown(_chat_md(m["content"]))
+            st.divider()
 
     vraag = st.chat_input("Bv. Wat zijn de grootste risico's in Den Haag?")
     if vraag:
-        with st.chat_message("user"):
-            st.markdown(vraag)
         st.session_state.chatgeschiedenis.append({"role": "user", "content": vraag})
-
-        with st.chat_message("assistant"):
-            with st.spinner("Aan het nadenken…"):
-                # Context: de meest relevante signalen binnen de huidige selectie.
-                top = filtered.sort_values("relevantie", ascending=False, na_position="last").head(50)
-                context = "\n".join(
-                    f"- [{r.gemeente}] indicator {r.indicator_id} ({r.classificatie}, "
-                    f"relevantie {r.relevantie}): {r.titel} — {r.samenvatting}"
-                    for _, r in top.iterrows()
-                ) or "(geen signalen in de huidige selectie)"
-                try:
-                    antwoord = chatmodule.beantwoord_vraag(
-                        vraag, context, chatmodule.MODELLEN[model_label])
-                except Exception as e:
-                    antwoord = (f"⚠️ Er ging iets mis — waarschijnlijk geen API-tegoed "
-                                f"of de sleutel ontbreekt.\n\n_Details: {e}_")
-                st.markdown(_chat_md(antwoord))
+        st.markdown(f"**{vraag}**")
+        with st.spinner("Aan het nadenken…"):
+            # Context: de meest relevante signalen binnen de huidige selectie.
+            top = filtered.sort_values("relevantie", ascending=False, na_position="last").head(50)
+            context = "\n".join(
+                f"- [{r.gemeente}] indicator {r.indicator_id} ({r.classificatie}, "
+                f"relevantie {r.relevantie}): {r.titel} — {r.samenvatting}"
+                for _, r in top.iterrows()
+            ) or "(geen signalen in de huidige selectie)"
+            try:
+                antwoord = chatmodule.beantwoord_vraag(
+                    vraag, context, chatmodule.MODELLEN[model_label])
+            except Exception as e:
+                antwoord = (f"⚠️ Er ging iets mis — waarschijnlijk geen API-tegoed "
+                            f"of de sleutel ontbreekt.\n\n_Details: {e}_")
+        st.markdown(_chat_md(antwoord))
+        st.divider()
         st.session_state.chatgeschiedenis.append({"role": "assistant", "content": antwoord})
