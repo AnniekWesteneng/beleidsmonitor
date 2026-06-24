@@ -31,10 +31,22 @@ industrie/logistiek opleveren, en risico's die de ontwikkeling echt beperken
 cultureel erfgoed). Baseer je op de aangeleverde activiteiten/thema's; verzin geen
 regels die er niet staan. Als iets onduidelijk is, benoem het als aandachtspunt.
 
+Geef bovenaan een HELDER EINDOORDEEL of deze locatie kansrijk is voor industrieel/
+logistiek vastgoed, zodat dit in één oogopslag te zien is:
+- "geschikt": locatie is industrieel/logistiek bestemd of goed benutbaar, weinig
+  blokkades → interessant.
+- "mits_voorwaarden": kansrijk maar met duidelijke beperkingen (bv. milieuzonering,
+  externe veiligheid, geluid) die je eerst moet uitzoeken.
+- "ongeschikt": overwegend wonen/natuur/beschermd of zware restricties → weinig
+  kansrijk voor industrie.
+Geef ook "kernpunt": één korte zin met de doorslaggevende reden.
+
 Houd het beknopt: maximaal 5 punten per lijst, elk één korte zin.
 
 Antwoord UITSLUITEND met JSON, geen tekst eromheen:
-{{"samenvatting": "<2-3 zinnen>",
+{{"geschiktheid": "geschikt"|"mits_voorwaarden"|"ongeschikt",
+  "kernpunt": "<één korte zin: de doorslaggevende reden>",
+  "samenvatting": "<2-3 zinnen>",
   "kansen": ["<kort, concreet>"],
   "risicos": ["<kort, concreet>"],
   "aandachtspunten": ["<kort>"]}}"""

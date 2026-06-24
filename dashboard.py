@@ -355,6 +355,17 @@ with tab_adres:
         else:
             st.markdown(f"📍 **{loc.get('weergavenaam')}** — gemeente {loc.get('gemeente')}")
 
+            # Eindoordeel in één oogopslag: gekleurde balk bovenaan.
+            _d = res.get("duiding") or {}
+            _g = _d.get("geschiktheid")
+            _kern = _d.get("kernpunt", "")
+            if _g == "geschikt":
+                st.success(f"🟢 **Interessant voor industrieel vastgoed** — {_kern}")
+            elif _g == "mits_voorwaarden":
+                st.warning(f"🟠 **Mogelijk interessant, mits voorwaarden** — {_kern}")
+            elif _g == "ongeschikt":
+                st.error(f"🔴 **Weinig kansrijk voor industrieel vastgoed** — {_kern}")
+
             # Kadastraal perceel (Kadaster open data via PDOK) op deze locatie.
             kres = kad.perceel_op_locatie(loc["rd_x"], loc["rd_y"])
             p = kres.get("perceel")
@@ -381,25 +392,25 @@ with tab_adres:
             if res.get("fout"):
                 st.info(f"DSO: {res['fout']}")
             else:
-                # AI-duiding: kansen / risico's / aandachtspunten voor deze locatie.
+                # AI-duiding: korte samenvatting zichtbaar, details in een uitklap.
                 d = res.get("duiding") or {}
-                st.subheader("Kansen & risico's op deze locatie (AI-duiding)")
                 if d.get("fout"):
                     st.info(d["fout"])
                 else:
                     if d.get("samenvatting"):
-                        st.markdown(d["samenvatting"])
-                    dc1, dc2 = st.columns(2)
-                    with dc1:
-                        st.markdown("**🟢 Kansen**")
-                        for k in d.get("kansen", []) or ["—"]:
-                            st.markdown(f"- {k}")
-                    with dc2:
-                        st.markdown("**🔴 Risico's**")
-                        for rsk in d.get("risicos", []) or ["—"]:
-                            st.markdown(f"- {rsk}")
-                    if d.get("aandachtspunten"):
-                        with st.expander("🔍 Aandachtspunten / nader uitzoeken"):
+                        st.caption(d["samenvatting"])
+                    with st.expander("🟢🔴 Onderbouwing: kansen, risico's & aandachtspunten"):
+                        dc1, dc2 = st.columns(2)
+                        with dc1:
+                            st.markdown("**🟢 Kansen**")
+                            for k in d.get("kansen", []) or ["—"]:
+                                st.markdown(f"- {k}")
+                        with dc2:
+                            st.markdown("**🔴 Risico's**")
+                            for rsk in d.get("risicos", []) or ["—"]:
+                                st.markdown(f"- {rsk}")
+                        if d.get("aandachtspunten"):
+                            st.markdown("**🔍 Aandachtspunten / nader uitzoeken**")
                             for a in d["aandachtspunten"]:
                                 st.markdown(f"- {a}")
 
