@@ -243,9 +243,16 @@ filtered = df[mask]
 kleuren = {"kans": "🟢", "risico": "🔴", "contextafhankelijk": "🟠"}
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
 def _netcongestie(gemeenten_tuple):
-    return nc.haal_netcongestie(list(gemeenten_tuple))
+    """Netcongestie ophalen; cache alleen als er écht data terugkomt (een
+    tijdelijke hapering van de bron wordt dan niet een uur lang vastgehouden)."""
+    cache = st.session_state.setdefault("_net_cache", {})
+    if gemeenten_tuple in cache:
+        return cache[gemeenten_tuple]
+    data = nc.haal_netcongestie(list(gemeenten_tuple))
+    if any(data.get(g) for g in gemeenten_tuple):
+        cache[gemeenten_tuple] = data
+    return data
 
 
 def _analyseer_adres(adres):
