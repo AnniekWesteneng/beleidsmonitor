@@ -118,6 +118,88 @@ def regels_op_adres(adres: str) -> dict:
     return res
 
 
+import re as _re
+
+
+def _strip_xml(inhoud: str) -> str:
+    t = _re.sub(r"<[^>]+>", " ", inhoud or "")
+    return _re.sub(r"\s+", " ", t).strip()
+
+
+def perceelregels_op_locatie(rd_x: float, rd_y: float, max_regels: int = 25) -> dict:
+    """De omgevingsplan-regels die SPECIFIEK op dit punt gelden (niet de
+    gemeente-brede regels). Koppelt: punt -> activiteit-locaties -> juridische
+    regels met een specifiek werkingsgebied -> regeltekst -> artikeltekst.
+
+    Retourneert {"regels": [{"expressie":.., "tekst":..}], "gemeente_breed": n}
+    of {"fout": ...}.
+    """
+    if not _key():
+        return {"fout": "Geen DSO-sleutel ingesteld."}
+    body = {"geometrie": {"type": "Point", "coordinates": [rd_x, rd_y]}}
+    try:
+        j = requests.post(_base() + "onderwerpen/_zoek", headers=_headers(),
+                          data=json.dumps(body), timeout=30).json()
+    except Exception as e:
+        return {"fout": f"netwerkfout: {type(e).__name__}"}
+
+    regels, gemeente_breed = [], 0
+    # Per gemeentelijke regeling (omgevingsplan) de specifieke regels ophalen.
+    for onderwerp in j.get("regelingen", []):
+        if "/act/gm" not in onderwerp.get("identificatie", ""):
+            continue
+        punt_ala = set()
+        for a in onderwerp.get("activiteiten", []):
+            punt_ala.update(a.get("activiteitLocatieaanduidingen", []))
+        links = onderwerp.get("_links", {})
+        reg_href = (links.get("regeling", {}) or {}).get("href")
+        ds_href = (links.get("documentstructuur", {}) or {}).get("href")
+        if not reg_href:
+            continue
+        try:
+            reg = requests.get(reg_href, headers=_headers(), timeout=30).json()
+            ann_href = reg.get("_links", {}).get("annotaties", {}).get("href")
+            ann = requests.get(ann_href, headers=_headers(), timeout=90).json()
+            ds = requests.get(ds_href, headers=_headers(), timeout=90).json()
+        except Exception as e:
+            return {"fout": f"DSO-fout bij regels ophalen: {type(e).__name__}"}
+
+        wid = {rt["identificatie"]: rt.get("wId") for rt in ann.get("regelteksten", [])}
+        # Tekst per component-identificatie uit de documentstructuur.
+        tekst_van = {}
+
+        def _walk(n):
+            if isinstance(n, dict):
+                i, inh = n.get("identificatie"), n.get("inhoud")
+                if i and inh:
+                    tekst_van[i] = _strip_xml(inh)
+                emb = n.get("_embedded", {})
+                for v in (emb.get("documentComponenten", []) if isinstance(emb, dict) else []):
+                    _walk(v)
+            elif isinstance(n, list):
+                for v in n:
+                    _walk(v)
+        _walk(ds)
+
+        gezien = set()
+        for jr in ann.get("regelsVoorIedereen", []):
+            ids = {x["identificatie"] for x in jr.get("activiteitLocatieaanduidingen", [])}
+            specifiek = any("ambtsgebied" not in lr for lr in jr.get("locatieRefs", []))
+            if not (ids & punt_ala):
+                continue
+            if not specifiek:
+                gemeente_breed += 1
+                continue
+            ref = jr.get("regeltekstRef")
+            w = wid.get(ref)
+            tekst = tekst_van.get(w)
+            if tekst and w not in gezien:
+                gezien.add(w)
+                regels.append({"expressie": (w or "").split("__", 1)[-1], "tekst": tekst})
+
+    return {"regels": regels[:max_regels], "gemeente_breed": gemeente_breed}
+
+
 def _niveau(identificatie: str) -> tuple[str, str]:
     """Leid het bestuursniveau af uit de regeling-identificatie (de 'maker')."""
     try:

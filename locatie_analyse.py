@@ -1,54 +1,59 @@
 """Locatie-analyse: combineer de DSO-regels op een adres met een AI-duiding van
 kansen en risico's voor industrieel vastgoed (Today).
 
-Geen documentbron: een live uitvraag van het Omgevingsloket (DSO) op een punt,
-gevolgd door een beknopte interpretatie door het Claude-model in termen van de
-tien beleidsindicatoren.
+Geen documentbron: een live uitvraag van het Omgevingsloket (DSO) op een punt.
+Naast de thema's worden de PERCEEL-SPECIFIEKE omgevingsplanregels (echte
+artikeltekst) opgehaald en door het Claude-model geduid: wat geldt hier concreet,
+en is er bv. een voorbereidingsbesluit of een bouw-/gebruiksbeperking.
 
-Eerlijk over de grens: de duiding is gebaseerd op de DSO-METADATA (geldende
-regelingen, hun activiteiten en thema's op de locatie), niet op de letterlijke
-plantekst. Het omgevingsplan zelf blijft leidend.
+Eerlijk over de grens: de regels komen letterlijk uit het DSO; de duiding is een
+AI-interpretatie. Het omgevingsplan zelf blijft leidend.
 """
 import json
 
 from classificeer import _get_client, MODEL, INDICATOREN, _parse_json_antwoord
-from bronnen.omgevingsloket import geocode_adres, onderwerpen_op_locatie
+from bronnen.omgevingsloket import (geocode_adres, onderwerpen_op_locatie,
+                                    perceelregels_op_locatie)
 
 _IND = "\n".join(f'{i["id"]}. {i["naam"]}' for i in INDICATOREN)
 
 PROMPT = f"""Je bent een beleidsanalist voor Today Development, ontwikkelaar van
-industrieel/logistiek vastgoed. Je krijgt de geldende omgevingsregels op één
-locatie uit het Digitaal Stelsel Omgevingswet (DSO): per bestuursniveau de
-gereguleerde activiteiten en de thema's. Geef een beknopte, feitelijke duiding van
-wat dit betekent voor industrieel vastgoed op deze plek.
+industrieel/logistiek vastgoed. Je krijgt voor één locatie: (a) de thema's die er
+gelden en (b) de PERCEEL-SPECIFIEKE omgevingsplanregels — de letterlijke
+artikeltekst die juist op dit perceel van toepassing is. Duid wat dit concreet
+betekent voor industrieel vastgoed hier.
 
 Beoordeel in termen van deze indicatoren:
 {_IND}
 
-Baseer je UITSLUITEND op de aangeleverde activiteiten/thema's; verzin geen regels of
-exacte waarden die er niet staan. De aangeleverde data zegt WELK type regels geldt
-(bv. bouwactiviteit, milieubelastende activiteit, kap, geluid-/veiligheid-/
-archeologiezone), niet de exacte normen (bouwhoogte, max. aantal bedrijven). Noem
-exacte getallen dus niet; verwijs daarvoor naar 'Regels op de kaart'.
+Baseer je op de aangeleverde regelteksten en thema's; verzin geen regels die er niet
+staan. Citeer concrete beperkingen die in de regels staan (bv. vergunningplicht,
+maximale maten, oppervlakte-/dieptegrenzen, toegestane functies, max. aantal
+bedrijven, een voorbereidingsbesluit). Staat een exacte waarde niet in de
+aangeleverde tekst, verzin die dan niet.
 
 Geef een HELDER EINDOORDEEL of deze locatie kansrijk is voor industrieel/logistiek
 vastgoed (één oogopslag):
 - "geschikt": industrieel/logistiek benutbaar, weinig blokkades → interessant.
 - "mits_voorwaarden": kansrijk maar met duidelijke beperkingen (milieuzonering,
-  externe veiligheid, geluid, erfgoed) die je eerst moet uitzoeken.
+  externe veiligheid, geluid, erfgoed, archeologie) die je eerst moet uitzoeken.
 - "ongeschikt": overwegend wonen/natuur/beschermd of zware restricties → weinig
   kansrijk.
 Geef ook "kernpunt": één korte zin met de doorslaggevende reden.
 
+Zet "voorbereidingsbesluit" op een korte omschrijving ALS uit de regels blijkt dat
+er een voorbereidingsbesluit of voorbereidingsbescherming geldt; anders lege string.
+
 Vul "let_op" met de 3-6 dingen die je VOORAF moet weten voor dit perceel, kort en
-concreet, gericht op: bouwen/bouwbeperkingen, toegestaan gebruik/functie-
-beperkingen, en bijzondere zones (geluid, externe veiligheid, archeologie, natuur,
-water). Elk punt één korte zin.
+concreet, ONTLEEND AAN de regelteksten: bouwen/bouwbeperkingen, toegestaan gebruik/
+functie- en aantalsbeperkingen, en bijzondere zones (geluid, externe veiligheid,
+archeologie, natuur, water). Noem concrete waarden als ze in de tekst staan.
 
 Antwoord UITSLUITEND met JSON, geen tekst eromheen:
 {{"geschiktheid": "geschikt"|"mits_voorwaarden"|"ongeschikt",
   "kernpunt": "<één korte zin: de doorslaggevende reden>",
-  "let_op": ["<kort, concreet: wat moet je weten over dit perceel>"],
+  "voorbereidingsbesluit": "<korte omschrijving of lege string>",
+  "let_op": ["<kort, concreet, ontleend aan de regels>"],
   "kansen": ["<kort, concreet>"],
   "risicos": ["<kort, concreet>"]}}"""
 
@@ -67,22 +72,17 @@ def analyseer_adres(adres: str) -> dict:
         return {"locatie": loc, "fout": dso["fout"]}
 
     regelingen, themas = dso["regelingen"], dso["themas"]
-    # Bouw een compacte, leesbare invoer voor het model: gemeente + provincie
-    # activiteiten (de locatie-specifieke laag), plus alle thema's.
-    blokken = []
-    for r in regelingen:
-        if r["niveau"] in ("gemeente", "provincie") and r["activiteiten"]:
-            acts = r["activiteiten"][:60]
-            blokken.append(f"{r['niveau_label']} — gereguleerde activiteiten:\n  "
-                           + "\n  ".join(acts))
-    rijk_ws = [r["niveau_label"] for r in regelingen
-               if r["niveau"] in ("rijk", "waterschap")]
+    # Perceel-specifieke omgevingsplanregels (echte artikeltekst) ophalen.
+    pr = perceelregels_op_locatie(loc["rd_x"], loc["rd_y"])
+    perceelregels = pr.get("regels", [])
+
+    regelblok = "\n\n".join(
+        f"Regel ({r['expressie']}): {r['tekst']}" for r in perceelregels
+    ) or "(geen perceel-specifieke omgevingsplanregels gevonden op dit punt)"
     inhoud = (
         f"Locatie: {loc.get('weergavenaam')} (gemeente {loc.get('gemeente')})\n\n"
         f"Thema's op deze locatie: {', '.join(themas) or '-'}\n\n"
-        + "\n\n".join(blokken)
-        + (f"\n\nDaarnaast gelden generieke rijks-/waterschapsregels: "
-           f"{', '.join(sorted(set(rijk_ws)))}." if rijk_ws else "")
+        f"Perceel-specifieke omgevingsplanregels (letterlijke tekst):\n\n{regelblok}"
     )
 
     duiding = {"fout": "AI-duiding mislukt"}
@@ -101,7 +101,7 @@ def analyseer_adres(adres: str) -> dict:
             duiding = {"fout": f"AI-duiding mislukt: {type(e).__name__}"}
 
     return {"locatie": loc, "regelingen": regelingen, "themas": themas,
-            "duiding": duiding}
+            "perceelregels": perceelregels, "duiding": duiding}
 
 
 if __name__ == "__main__":

@@ -373,6 +373,9 @@ with tab_adres:
                 st.warning(f"🟠 **Mogelijk interessant, mits voorwaarden** — {_kern}")
             elif _g == "ongeschikt":
                 st.error(f"🔴 **Weinig kansrijk voor industrieel vastgoed** — {_kern}")
+            _vb = (_d.get("voorbereidingsbesluit") or "").strip()
+            if _vb:
+                st.warning(f"⚠️ **Voorbereidingsbesluit van kracht** — {_vb}")
 
             # Kadastraal perceel (Kadaster open data via PDOK) op deze locatie.
             kres = kad.perceel_op_locatie(loc["rd_x"], loc["rd_y"])
@@ -418,9 +421,23 @@ with tab_adres:
                             st.markdown("**🔴 Risico's**")
                             for rsk in d.get("risicos", []) or ["—"]:
                                 st.markdown(f"- {rsk}")
-                st.caption("De exacte regels (bouwhoogte, toegestaan gebruik, "
-                           "max. aantal bedrijven e.d.) staan in het omgevingsplan zelf — "
-                           "open ze via de knop hieronder.")
+                    # De letterlijke perceel-specifieke regels uit het omgevingsplan.
+                    pregels = res.get("perceelregels", [])
+                    if pregels:
+                        with st.expander(f"📜 Letterlijke regels op dit perceel "
+                                         f"({len(pregels)})"):
+                            for pr in pregels:
+                                st.markdown(f"- _{pr['expressie']}_ — {pr['tekst']}")
+                    else:
+                        st.caption("ℹ️ Voor dit punt zijn (nog) geen perceel-specifieke "
+                                   "omgevingsplanregels via de DSO gevonden — de "
+                                   "bestemming staat bij deze gemeente mogelijk nog in "
+                                   "het 'tijdelijk deel'. De duiding is dan o.b.v. de "
+                                   "thema's; bekijk de exacte bestemming via 'Regels op "
+                                   "de kaart'.")
+                st.caption("Perceel-specifieke regels komen letterlijk uit het "
+                           "omgevingsplan (DSO). Voor de volledige context en kaart: "
+                           "open 'Regels op de kaart' hieronder.")
             st.link_button("📖 Bekijk de exacte regels op deze plek (Regels op de kaart)",
                            "https://omgevingswet.overheid.nl/regels-op-de-kaart/")
 
