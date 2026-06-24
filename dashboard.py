@@ -9,6 +9,7 @@ HUISSTIJL AANPASSEN:
 """
 import base64
 import os
+import re
 import sqlite3
 from pathlib import Path
 
@@ -529,6 +530,16 @@ with tab_adres:
                                 f"{r.titel[:60]}")
                 st.caption("Zie het tabblad Signalen voor alle signalen + filters.")
 
+def _chat_md(tekst: str) -> str:
+    """Zet markdown-koppen (#, ##, …) om naar vetgedrukte regels, zodat een
+    chatantwoord compact en professioneel rendert i.p.v. met reuzentitels."""
+    regels = []
+    for r in (tekst or "").split("\n"):
+        m = re.match(r"\s*#{1,6}\s+(.*)", r)
+        regels.append(f"**{m.group(1).strip()}**" if m else r)
+    return "\n".join(regels)
+
+
 # ============================= TAB 2: CHAT ==================================
 with tab_chat:
     import chat as chatmodule
@@ -545,7 +556,8 @@ with tab_chat:
     # Toon de gesprekgeschiedenis.
     for m in st.session_state.chatgeschiedenis:
         with st.chat_message(m["role"]):
-            st.markdown(m["content"])
+            st.markdown(_chat_md(m["content"]) if m["role"] == "assistant"
+                        else m["content"])
 
     vraag = st.chat_input("Bv. Wat zijn de grootste risico's in Den Haag?")
     if vraag:
@@ -568,5 +580,5 @@ with tab_chat:
                 except Exception as e:
                     antwoord = (f"⚠️ Er ging iets mis — waarschijnlijk geen API-tegoed "
                                 f"of de sleutel ontbreekt.\n\n_Details: {e}_")
-                st.markdown(antwoord)
+                st.markdown(_chat_md(antwoord))
         st.session_state.chatgeschiedenis.append({"role": "assistant", "content": antwoord})

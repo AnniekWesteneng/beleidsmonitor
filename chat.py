@@ -23,7 +23,15 @@ aangeleverde beleidssignalen. Regels:
 - Baseer je antwoord alleen op de aangeleverde signalen; verzin niets.
 - Verwijs concreet naar gemeente en indicator waar relevant.
 - Als het antwoord niet uit de signalen blijkt, zeg dat dan eerlijk.
-- Antwoord beknopt en in het Nederlands, met waar passend een korte opsomming."""
+- Antwoord beknopt en in het Nederlands.
+
+OPMAAK (belangrijk, houd het professioneel en compact):
+- Gebruik GEEN markdown-koppen (geen #, ##, ###) en GEEN grote titel.
+- Begin direct met 1-2 zinnen kernantwoord.
+- Gebruik daarna waar nuttig een korte opsomming met bullets (-).
+- Markeer een kort label vetgedrukt met **dubbele sterren**, gevolgd door een
+  dubbele punt en de toelichting op dezelfde regel (bv. "**Risico:** ...").
+- Houd alinea's kort (max ~3 regels). Geen overbodige inleiding of afsluiting."""
 
 _client = None
 
