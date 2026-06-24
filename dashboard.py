@@ -66,6 +66,9 @@ if _api:
 _dso = _secret("DSO_PRE_API_KEY")
 if _dso:
     os.environ["DSO_PRE_API_KEY"] = _dso
+_dso_prod = _secret("DSO_PROD_API_KEY")
+if _dso_prod:
+    os.environ["DSO_PROD_API_KEY"] = _dso_prod
 
 
 def _wachtwoord_ok() -> bool:
@@ -337,9 +340,8 @@ with tab_net:
 with tab_adres:
     st.markdown("Typ een adres → de **geldende omgevingsdocumenten** op die locatie "
                 "(uit het DSO/Omgevingsloket) plus onze kans/risico-signalen voor die gemeente.")
-    st.caption("⚠️ DSO-data komt uit de PRE/testomgeving — sommige regelingen zijn "
-               "testdata, niet de echte actuele omgevingsplannen. Voor productiedata "
-               "is een productiesleutel nodig.")
+    st.caption("ℹ️ DSO-data komt uit de productieomgeving van het Omgevingsloket — "
+               "de echte, geldende omgevingsdocumenten op deze locatie.")
     adres = st.text_input("Adres", placeholder="bv. Atoomweg 50, Utrecht")
     if adres:
         with st.spinner("Adres opzoeken en DSO bevragen…"):

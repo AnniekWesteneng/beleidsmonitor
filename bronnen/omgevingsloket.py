@@ -29,13 +29,18 @@ PDOK = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free"
 UA = {"User-Agent": "Beleidsmonitor-TodayDevelopment/0.1 (afstudeerproject)"}
 
 
+def _is_prod() -> bool:
+    """Gebruik productie zodra er een prod-sleutel is; anders PRE (test)."""
+    return bool(os.environ.get("DSO_PROD_API_KEY"))
+
+
 def _key() -> str:
-    # Nu de PRE-sleutel; voor productie later een prod-sleutel + PROD_BASE.
-    return os.environ.get("DSO_PRE_API_KEY", "")
+    # Prod-sleutel heeft voorrang; anders terugvallen op de PRE-sleutel.
+    return os.environ.get("DSO_PROD_API_KEY") or os.environ.get("DSO_PRE_API_KEY", "")
 
 
 def _base() -> str:
-    return PRE_BASE
+    return PROD_BASE if _is_prod() else PRE_BASE
 
 
 def geocode_adres(adres: str) -> dict | None:
