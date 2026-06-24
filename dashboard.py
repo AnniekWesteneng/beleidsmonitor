@@ -241,10 +241,18 @@ def _netcongestie(gemeenten_tuple):
     return nc.haal_netcongestie(list(gemeenten_tuple))
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
 def _analyseer_adres(adres):
+    """Analyseer een adres; cache alleen GESLAAGDE resultaten (een mislukte
+    AI-duiding wordt niet bewaard, zodat een volgende poging het opnieuw probeert)."""
     from locatie_analyse import analyseer_adres
-    return analyseer_adres(adres)
+    cache = st.session_state.setdefault("_adres_cache", {})
+    if adres in cache:
+        return cache[adres]
+    res = analyseer_adres(adres)
+    gelukt = not res.get("fout") and not (res.get("duiding") or {}).get("fout")
+    if gelukt:
+        cache[adres] = res
+    return res
 
 
 tab_signalen, tab_net, tab_adres, tab_chat = st.tabs(
@@ -392,14 +400,15 @@ with tab_adres:
             if res.get("fout"):
                 st.info(f"DSO: {res['fout']}")
             else:
-                # AI-duiding: korte samenvatting zichtbaar, details in een uitklap.
                 d = res.get("duiding") or {}
                 if d.get("fout"):
                     st.info(d["fout"])
                 else:
-                    if d.get("samenvatting"):
-                        st.caption(d["samenvatting"])
-                    with st.expander("🟢🔴 Onderbouwing: kansen, risico's & aandachtspunten"):
+                    # Kort & precies: wat moet je weten over dit perceel.
+                    st.markdown("**📌 Wat geldt hier — om te weten vóór ontwikkeling**")
+                    for punt in d.get("let_op", []) or ["—"]:
+                        st.markdown(f"- {punt}")
+                    with st.expander("🟢 Kansen & 🔴 risico's"):
                         dc1, dc2 = st.columns(2)
                         with dc1:
                             st.markdown("**🟢 Kansen**")
@@ -409,29 +418,10 @@ with tab_adres:
                             st.markdown("**🔴 Risico's**")
                             for rsk in d.get("risicos", []) or ["—"]:
                                 st.markdown(f"- {rsk}")
-                        if d.get("aandachtspunten"):
-                            st.markdown("**🔍 Aandachtspunten / nader uitzoeken**")
-                            for a in d["aandachtspunten"]:
-                                st.markdown(f"- {a}")
-
-                # Onderliggende regels: per bestuursniveau + thema's.
-                regs = res.get("regelingen", [])
-                themas = res.get("themas", [])
-                if themas:
-                    st.caption("**Thema's op deze locatie:** " + ", ".join(themas))
-                with st.expander(f"📑 Geldende regels per niveau ({len(regs)} regelingen)"):
-                    for niv in ("gemeente", "provincie", "waterschap", "rijk", "overig"):
-                        groep = [r for r in regs if r["niveau"] == niv]
-                        if not groep:
-                            continue
-                        st.markdown(f"**{groep[0]['niveau_label']}** ({len(groep)})")
-                        for r in groep:
-                            acts = r["activiteiten"]
-                            if acts:
-                                toon = ", ".join(acts[:8])
-                                meer = f" … +{len(acts)-8} meer" if len(acts) > 8 else ""
-                                st.caption(f"• {len(acts)} activiteiten: {toon}{meer}")
-            st.link_button("Open 'Regels op de kaart' (officieel)",
+                st.caption("De exacte regels (bouwhoogte, toegestaan gebruik, "
+                           "max. aantal bedrijven e.d.) staan in het omgevingsplan zelf — "
+                           "open ze via de knop hieronder.")
+            st.link_button("📖 Bekijk de exacte regels op deze plek (Regels op de kaart)",
                            "https://omgevingswet.overheid.nl/regels-op-de-kaart/")
 
             # Onze eigen signalen voor de gemeente van dit adres.

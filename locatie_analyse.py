@@ -25,31 +25,32 @@ wat dit betekent voor industrieel vastgoed op deze plek.
 Beoordeel in termen van deze indicatoren:
 {_IND}
 
-Wees concreet en streng: noem alleen kansen die een aanwijsbaar voordeel voor
-industrie/logistiek opleveren, en risico's die de ontwikkeling echt beperken
-(bv. milieuzonering, externe veiligheid, natuur/Natura 2000, water, geluid,
-cultureel erfgoed). Baseer je op de aangeleverde activiteiten/thema's; verzin geen
-regels die er niet staan. Als iets onduidelijk is, benoem het als aandachtspunt.
+Baseer je UITSLUITEND op de aangeleverde activiteiten/thema's; verzin geen regels of
+exacte waarden die er niet staan. De aangeleverde data zegt WELK type regels geldt
+(bv. bouwactiviteit, milieubelastende activiteit, kap, geluid-/veiligheid-/
+archeologiezone), niet de exacte normen (bouwhoogte, max. aantal bedrijven). Noem
+exacte getallen dus niet; verwijs daarvoor naar 'Regels op de kaart'.
 
-Geef bovenaan een HELDER EINDOORDEEL of deze locatie kansrijk is voor industrieel/
-logistiek vastgoed, zodat dit in één oogopslag te zien is:
-- "geschikt": locatie is industrieel/logistiek bestemd of goed benutbaar, weinig
-  blokkades → interessant.
-- "mits_voorwaarden": kansrijk maar met duidelijke beperkingen (bv. milieuzonering,
-  externe veiligheid, geluid) die je eerst moet uitzoeken.
+Geef een HELDER EINDOORDEEL of deze locatie kansrijk is voor industrieel/logistiek
+vastgoed (één oogopslag):
+- "geschikt": industrieel/logistiek benutbaar, weinig blokkades → interessant.
+- "mits_voorwaarden": kansrijk maar met duidelijke beperkingen (milieuzonering,
+  externe veiligheid, geluid, erfgoed) die je eerst moet uitzoeken.
 - "ongeschikt": overwegend wonen/natuur/beschermd of zware restricties → weinig
-  kansrijk voor industrie.
+  kansrijk.
 Geef ook "kernpunt": één korte zin met de doorslaggevende reden.
 
-Houd het beknopt: maximaal 5 punten per lijst, elk één korte zin.
+Vul "let_op" met de 3-6 dingen die je VOORAF moet weten voor dit perceel, kort en
+concreet, gericht op: bouwen/bouwbeperkingen, toegestaan gebruik/functie-
+beperkingen, en bijzondere zones (geluid, externe veiligheid, archeologie, natuur,
+water). Elk punt één korte zin.
 
 Antwoord UITSLUITEND met JSON, geen tekst eromheen:
 {{"geschiktheid": "geschikt"|"mits_voorwaarden"|"ongeschikt",
   "kernpunt": "<één korte zin: de doorslaggevende reden>",
-  "samenvatting": "<2-3 zinnen>",
+  "let_op": ["<kort, concreet: wat moet je weten over dit perceel>"],
   "kansen": ["<kort, concreet>"],
-  "risicos": ["<kort, concreet>"],
-  "aandachtspunten": ["<kort>"]}}"""
+  "risicos": ["<kort, concreet>"]}}"""
 
 
 def analyseer_adres(adres: str) -> dict:
@@ -84,17 +85,20 @@ def analyseer_adres(adres: str) -> dict:
            f"{', '.join(sorted(set(rijk_ws)))}." if rijk_ws else "")
     )
 
-    duiding = None
-    try:
-        b = _get_client().messages.create(
-            model=MODEL, max_tokens=1400,
-            system=[{"type": "text", "text": PROMPT,
-                     "cache_control": {"type": "ephemeral"}}],
-            messages=[{"role": "user", "content": inhoud}],
-        )
-        duiding = _parse_json_antwoord(b.content[0].text.strip())
-    except Exception as e:
-        duiding = {"fout": f"AI-duiding mislukt: {type(e).__name__}"}
+    duiding = {"fout": "AI-duiding mislukt"}
+    for poging in range(3):  # enkele hapering of formatfout opvangen
+        try:
+            b = _get_client().messages.create(
+                model=MODEL, max_tokens=1600,
+                system=[{"type": "text", "text": PROMPT,
+                         "cache_control": {"type": "ephemeral"}}],
+                messages=[{"role": "user", "content": inhoud}],
+            )
+            duiding = _parse_json_antwoord(b.content[0].text.strip())
+            if isinstance(duiding, dict) and duiding.get("geschiktheid"):
+                break  # geslaagd
+        except Exception as e:
+            duiding = {"fout": f"AI-duiding mislukt: {type(e).__name__}"}
 
     return {"locatie": loc, "regelingen": regelingen, "themas": themas,
             "duiding": duiding}
