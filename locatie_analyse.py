@@ -31,13 +31,25 @@ Beoordeel in termen van deze indicatoren:
 Baseer je UITSLUITEND op de aangeleverde gegevens; verzin geen waarden die er niet
 staan. Verwijs concreet naar de bestemming, de maxima en de toegestane categorie.
 
+Over voorbereidingsbesluiten: een voorbereidingsbesluit betekent dat er een
+planologische WIJZIGING in voorbereiding is. Verzin NIET de strekking of richting
+ervan op basis van alleen de naam (een besluit kan iets juist beperken óf mogelijk
+maken). Behandel het als aandachtspunt "uitzoeken bij de bron", en laat een
+voorbereidingsbesluit waarvan de strekking onbekend is het eindoordeel NIET
+automatisch op "ongeschikt" zetten — weeg het mee als onzekerheid, niet als
+blokkade. Een besluit dat specifiek over een ánder gebruik gaat (bv. hyperscale
+datacenters of detailhandel) zegt op zichzelf weinig over industrie/logistiek.
+
 Geef een HELDER EINDOORDEEL of deze locatie kansrijk is voor industrieel/logistiek
 vastgoed (één oogopslag):
 - "geschikt": industrieel/logistiek benutbaar, weinig blokkades → interessant.
 - "mits_voorwaarden": kansrijk maar met duidelijke beperkingen (milieuzonering,
   externe veiligheid, geluid, erfgoed, archeologie) die je eerst moet uitzoeken.
-- "ongeschikt": overwegend wonen/natuur/beschermd of zware restricties → weinig
-  kansrijk.
+- "ongeschikt": uit de gegevens blijkt een echte beperking (bv. bestemming wonen/
+  natuur/beschermd, of een regel die industrie uitsluit) → weinig kansrijk.
+- "onbekend": er is GEEN bestemming en GEEN maatvoering aangeleverd → te weinig
+  gegevens om te oordelen. Gebruik dit i.p.v. "ongeschikt"; concludeer NOOIT
+  "ongeschikt" louter omdat gegevens ontbreken.
 Geef ook "kernpunt": één korte zin met de doorslaggevende reden.
 
 Zet "voorbereidingsbesluit" op een korte omschrijving ALS uit de regels blijkt dat
@@ -78,13 +90,24 @@ def analyseer_adres(adres: str) -> dict:
     func = rp.get("functieaanduidingen", [])
     # Voorbereidingsbesluiten: DSO (actueel, ook ná 2024) + Ruimtelijke Plannen,
     # ontdubbeld op naam. DSO is leidend en future-proof.
-    vb_namen, vb = set(), []
+    import re as _re
+
+    def _vb_kern(naam):
+        # Normaliseer: haal type-woorden weg, hou de kern (bv. 'hyperscaledatacent').
+        s = naam.lower()
+        for w in ("voorbeschermingsregels", "voorbereidingsbesluit",
+                  "voorbescherming", "omgevingsplan"):
+            s = s.replace(w, "")
+        return _re.sub(r"[^a-z]", "", s)[:12]
+
+    vb_kernen, vb = set(), []
     for bron in (voorbeschermingsregels_op_punt(loc["rd_x"], loc["rd_y"]),
                  rp.get("voorbereidingsbesluiten", [])):
         for v in bron:
             naam = (v.get("naam") or "").strip()
-            if naam and naam.lower() not in vb_namen:
-                vb_namen.add(naam.lower())
+            kern = _vb_kern(naam)
+            if naam and kern not in vb_kernen:
+                vb_kernen.add(kern)
                 vb.append({"naam": naam})
     best_txt = ", ".join(b["naam"] for b in best if b.get("naam")) or "-"
     maat_txt = "; ".join(f"{m.get('naam')}={m.get('waarde')}" for m in maat) or "-"

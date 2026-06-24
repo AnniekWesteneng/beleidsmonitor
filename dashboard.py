@@ -382,6 +382,9 @@ with tab_adres:
                 st.warning(f"🟠 **Mogelijk interessant, mits voorwaarden** — {_kern}")
             elif _g == "ongeschikt":
                 st.error(f"🔴 **Weinig kansrijk voor industrieel vastgoed** — {_kern}")
+            elif _g == "onbekend":
+                st.info(f"⚪ **Onvoldoende planologische gegevens op dit punt** — {_kern} "
+                        "Probeer een exacter adres (met huisnummer) of bekijk de bron.")
             _pr = res.get("planregels") or {}
             _vbs = res.get("voorbereidingsbesluiten", [])
             for _v in _vbs:
