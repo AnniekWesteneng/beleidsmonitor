@@ -317,16 +317,12 @@ with tab_signalen:
 
 # ========================== TAB: NETCONGESTIE ==============================
 with tab_net:
-    st.markdown("Live transportcapaciteit van het elektriciteitsnet per "
-                "**voedingsgebied** (netvlak rond een onderstation). "
-                "**Afname** = stroom afnemen (verbruik) · **Teruglevering** = "
-                "terugleveren (bv. zon-op-dak). Bron: capaciteitskaart Netbeheer "
-                "Nederland.")
-    st.caption("🟢 ruim · 🟡 beperkt · 🟠 in onderzoek (wachtrij) · 🔴 tekort "
-               "(wachtrij). Wachtrij = openstaande aanvragen in MW.")
-    st.info("ℹ️ De koppeling gemeente ↔ voedingsgebied gebeurt op **naam** "
-            "(vereenvoudiging). Voor het exacte, geografische beeld — inclusief de "
-            "TenneT-hoogspanningslaag — is de officiële kaart leidend (knop onderaan).")
+    st.markdown("**Live transportcapaciteit van het stroomnet** per voedingsgebied "
+                "(afname = verbruik · teruglevering = bv. zon-op-dak). "
+                "Bron: Netbeheer Nederland.")
+    st.caption("🟢 ruim · 🟡 beperkt · 🟠 in onderzoek · 🔴 tekort · wachtrij = "
+               "openstaande aanvragen in MW. Koppeling op gemeentenaam "
+               "(vereenvoudiging); de officiële kaart is leidend.")
     # Beweeg mee met het gemeentefilter in de zijbalk (alleen geselecteerde
     # gemeenten tonen) — voorkomt een eindeloze lijst bij veel gemeenten.
     net_gemeenten = [g for g in GEMEENTEN if g in gem]
@@ -354,13 +350,12 @@ with tab_net:
 
 # ========================= TAB: ZOEK OP ADRES ==============================
 with tab_adres:
-    st.markdown("Typ een adres → het **perceel**, de **geldende regels** op die locatie "
-                "(uit het DSO/Omgevingsloket) en een **AI-duiding van kansen en risico's** "
-                "voor industrieel vastgoed, plus onze eigen signalen voor die gemeente.")
-    st.caption("ℹ️ DSO-data komt uit de productieomgeving van het Omgevingsloket "
-               "(echte, geldende regels). De kans/risico-duiding is een AI-interpretatie "
-               "van die regels; het omgevingsplan zelf blijft leidend.")
-    adres = st.text_input("Adres", placeholder="bv. Atoomweg 50, Utrecht")
+    st.markdown("Typ een adres → **perceel, geldende regels en een kans/risico-duiding** "
+                "voor industrieel vastgoed.")
+    st.caption("Regels uit het Omgevingsloket/Ruimtelijke Plannen; de duiding is een "
+               "AI-interpretatie, het omgevingsplan blijft leidend.")
+    adres = st.text_input("Adres", placeholder="bv. Atoomweg 50, Utrecht",
+                          label_visibility="collapsed")
     if adres:
         with st.spinner("Adres opzoeken, DSO bevragen en analyseren…"):
             res = _analyseer_adres(adres)
@@ -504,12 +499,11 @@ with tab_adres:
 with tab_chat:
     import chat as chatmodule
 
-    st.markdown("Stel een vraag in gewone taal. De chat antwoordt op basis van de "
-                "signalen die nú door je filters komen.")
-    st.caption(f"Kennisbasis: {filtered['_doc'].nunique()} documenten / {len(filtered)} "
-               "signalen. ⚠️ Elke vraag kost een paar cent API-tegoed.")
+    st.caption(f"Vraag in gewone taal over de {filtered['_doc'].nunique()} documenten "
+               f"die nú door je filters komen. Elke vraag kost een paar cent API-tegoed.")
 
-    model_label = st.selectbox("Model", list(chatmodule.MODELLEN.keys()), index=0)
+    model_label = st.selectbox("Model", list(chatmodule.MODELLEN.keys()), index=0,
+                               label_visibility="collapsed")
 
     if "chatgeschiedenis" not in st.session_state:
         st.session_state.chatgeschiedenis = []
