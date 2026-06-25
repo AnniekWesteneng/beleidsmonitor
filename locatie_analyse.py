@@ -148,6 +148,85 @@ def analyseer_adres(adres: str) -> dict:
             "voorbereidingsbesluiten": vb, "duiding": duiding}
 
 
+def _latin1(s: str) -> str:
+    """Maak tekst geschikt voor de standaard-PDF-fonts (latin-1)."""
+    repl = {"€": "EUR", "→": "->", "≥": ">=", "–": "-", "—": "-", "•": "-",
+            "★": "*", "☆": "*", "’": "'", "‘": "'", "“": '"', "”": '"', "²": "2"}
+    for a, b in repl.items():
+        s = (s or "").replace(a, b)
+    return s.encode("latin-1", "replace").decode("latin-1")
+
+
+def pdf_rapport(res: dict) -> bytes:
+    """Maak een PDF-rapport van een adresanalyse (resultaat van analyseer_adres)."""
+    from datetime import date
+    from fpdf import FPDF
+
+    loc = res.get("locatie", {}) or {}
+    rp = res.get("planregels", {}) or {}
+    d = res.get("duiding", {}) or {}
+    enkel = [b for b in rp.get("bestemmingen", []) if b.get("type") == "enkelbestemming"]
+
+    pdf = FPDF()
+    pdf.set_auto_page_break(True, margin=15)
+    pdf.add_page()
+
+    def line(t, size=10, style="", h=5, color=(0, 0, 0)):
+        pdf.set_font("Helvetica", style, size)
+        pdf.set_text_color(*color)
+        pdf.multi_cell(0, h, _latin1(t), new_x="LMARGIN", new_y="NEXT")
+
+    line("Locatieanalyse industrieel vastgoed", 16, "B", 9)
+    line(f"{loc.get('weergavenaam', '')}  -  gemeente {loc.get('gemeente') or '-'}", 11)
+    line("Beleidsmonitor Today Development - gegenereerd op " + date.today().isoformat(),
+         8, "I", 5, (120, 120, 120))
+    pdf.ln(2)
+
+    label = {"geschikt": "Interessant voor industrieel vastgoed",
+             "mits_voorwaarden": "Mogelijk interessant, mits voorwaarden",
+             "ongeschikt": "Weinig kansrijk voor industrieel vastgoed",
+             "onbekend": "Onvoldoende planologische gegevens"}.get(d.get("geschiktheid"))
+    if label:
+        line("Eindoordeel: " + label, 12, "B", 7)
+        if d.get("kernpunt"):
+            line(d["kernpunt"])
+        pdf.ln(1)
+
+    vbs = res.get("voorbereidingsbesluiten", [])
+    if vbs:
+        line("Voorbereidingsbesluit(en) van kracht", 11, "B", 6)
+        for v in vbs:
+            line("- " + (v.get("naam") or ""))
+        pdf.ln(1)
+
+    line("Planologische feiten", 11, "B", 6)
+    if enkel:
+        line("Bestemming: " + ", ".join(
+            dict.fromkeys(b["naam"] for b in enkel if b.get("naam"))))
+    for m in rp.get("maatvoeringen", []):
+        line(f"{m.get('naam')}: {m.get('waarde')}")
+    if rp.get("functieaanduidingen"):
+        line("Toegestane functie/categorie: " + ", ".join(rp["functieaanduidingen"]))
+    if not (enkel or rp.get("maatvoeringen")):
+        line("Geen digitale bestemming gevonden op dit punt.")
+    pdf.ln(1)
+
+    if d.get("kansen"):
+        line("Kansen", 11, "B", 6)
+        for k in d["kansen"]:
+            line("- " + k)
+    if d.get("risicos"):
+        line("Risico's", 11, "B", 6)
+        for r in d["risicos"]:
+            line("- " + r)
+    pdf.ln(2)
+
+    line("Bron: Ruimtelijke Plannen / Omgevingsloket (DSO). De kans/risico-duiding is een "
+         "AI-interpretatie; het omgevingsplan blijft leidend. Controleer via 'Regels op de kaart'.",
+         8, "I", 4, (120, 120, 120))
+    return bytes(pdf.output())
+
+
 if __name__ == "__main__":
     import sys
     adres = " ".join(sys.argv[1:]) or "Atoomweg 50, Utrecht"

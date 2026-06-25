@@ -400,6 +400,17 @@ with tab_adres:
         else:
             st.markdown(f"📍 **{loc.get('weergavenaam')}** — gemeente {loc.get('gemeente')}")
 
+            # Het volledige rapport als PDF downloaden.
+            try:
+                import locatie_analyse as _la
+                _pdf = _la.pdf_rapport(res)
+                _vn = re.sub(r"[^A-Za-z0-9]+", "_", adres).strip("_")[:40] or "locatie"
+                st.download_button("📄 Download rapport (PDF)", data=_pdf,
+                                   file_name=f"locatieanalyse_{_vn}.pdf",
+                                   mime="application/pdf")
+            except Exception:
+                pass
+
             # Eindoordeel in één oogopslag: gekleurde balk bovenaan.
             _d = res.get("duiding") or {}
             _g = _d.get("geschiktheid")
