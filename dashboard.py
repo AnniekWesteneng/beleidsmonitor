@@ -208,7 +208,9 @@ def _sync_provincie():
 
 with st.sidebar:
     st.header("Filters")
-    zoek = st.text_input("Zoeken", placeholder="bv. netcongestie, Binckhorst")
+    zoek = st.text_input("Zoeken", placeholder="bv. netcongestie bedrijf",
+                         help="Meerdere woorden = alle moeten voorkomen (bv. "
+                              "'netcongestie bedrijf' toont alleen signalen met béíde).")
 
     prov_opties = sorted(df["_provincie"].dropna().unique())
     prov_sel = st.multiselect("Provincie", prov_opties, placeholder="alle",
@@ -252,7 +254,9 @@ mask = (
     & (df.relevantie.fillna(0) >= min_rel)
 )
 if zoek:
-    mask &= df["_zoektekst"].str.contains(zoek.lower(), regex=False, na=False)
+    # Meerdere woorden (gescheiden door spatie of komma) = ALLE moeten voorkomen.
+    for term in [t for t in re.split(r"[,\s]+", zoek.lower()) if t]:
+        mask &= df["_zoektekst"].str.contains(term, regex=False, na=False)
 if van and tot:
     d = df["_datum"]
     mask &= d.isna() | ((d.dt.date >= van) & (d.dt.date <= tot))
