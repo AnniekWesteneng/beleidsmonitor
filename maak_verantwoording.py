@@ -306,9 +306,26 @@ bullet(doc, [
     ("Maten", "percentage overeenstemming indicator, percentage overeenstemming classificatie, gemiddelde relevantie-afwijking, plus kwalitatieve analyse van de afwijkingen."),
     ("Beperkingen", "kleine n (indicatief); een beoordelaar (geen inter-beoordelaarsbetrouwbaarheid); beoordeling op samenvatting i.p.v. volledige brontekst; en deels zelfreferentieel (onderzoeker en tool gebruiken hetzelfde kader)."),
 ])
-para(doc, "Resultaat (in te vullen na codering): van de 30 signalen kende de onderzoeker in __% "
-          "dezelfde indicator en __% dezelfde classificatie toe; de afwijkingen volgden de "
-          "patronen: ____.")
+para(doc, "Resultaat (n=25 gecodeerde signalen). Berekening:")
+bullet(doc, [
+    ("Indicator-overeenstemming", "aantal 'indicator juist' / totaal = 23 / 25 = 92%."),
+    ("Classificatie-overeenstemming", "aantal signalen met gelijke classificatie / totaal = 19 / 25 = 76%."),
+    ("Relevantie-afwijking", "gemiddelde van |relevantie onderzoeker - relevantie tool| = som 27 / 25 = circa 1,1 punt."),
+])
+para(doc, "De zes afwijkingen waren systematisch, geen willekeur:")
+tabel(doc, ["Document", "Tool", "Onderzoeker", "Type afwijking"], [
+    ["Helmond - verkoop perceel (al verkocht)", "kans (5)", "niet-relevant", "vals positief / ruis"],
+    ["Gouda - vergunning ander bedrijfsverzamelgebouw", "kans (5)", "niet-relevant", "vals positief (+ indicator)"],
+    ["Gouda - Handboek Grondzaken", "kans (4)", "niet-relevant", "vals positief / ruis"],
+    ["Gouda - brief Federatie Ruimtelijke Kwaliteit", "context (2)", "niet-relevant", "vals positief (+ indicator)"],
+    ["Zoetermeer - strategische aankoop grond", "kans (5)", "risico (5)", "polariteitsfout"],
+    ["Oss - Spooragenda 2025-2040", "context", "kans", "kans/context-nuance"],
+], [6.5, 2.5, 3.0, 4.0])
+para(doc, "Interpretatie: de afwijkingen zijn overwegend valse positieven - de tool labelt enkele "
+          "generieke of niet-relevante stukken als 'kans' met een te hoge relevantie - plus een "
+          "polariteitsfout (een gemeente die zelf grond verwerft is voor een ontwikkelaar een "
+          "risico, niet een kans). Een strengere relevantiedrempel zou het merendeel van deze "
+          "afwijkingen wegnemen. De fouten zijn systematisch en verklaarbaar, niet willekeurig.")
 
 # 10. Verantwoording AI-gebruik (volgens APA-richtlijn GenAI als onderzoekstool)
 kop(doc, "10. Verantwoording gebruik generatieve AI")
