@@ -148,6 +148,39 @@ def analyseer_adres(adres: str) -> dict:
             "voorbereidingsbesluiten": vb, "duiding": duiding}
 
 
+def quick_check(adres: str) -> dict:
+    """Lichte check voor de volglijst — GEEN AI/Anthropic (werkt dus ook bij
+    bereikte API-limiet): bestemming, maatvoering en voorbereidingsbesluit(en)."""
+    import re as _re
+    loc = geocode_adres(adres)
+    if not loc:
+        return {"adres": adres, "fout": "Adres niet gevonden."}
+    rp = details_op_punt(loc["rd_x"], loc["rd_y"])
+
+    def _kern(naam):
+        s = naam.lower()
+        for w in ("voorbeschermingsregels", "voorbereidingsbesluit",
+                  "voorbescherming", "omgevingsplan"):
+            s = s.replace(w, "")
+        return _re.sub(r"[^a-z]", "", s)[:12]
+
+    vbs, kernen = [], set()
+    for bron in (voorbeschermingsregels_op_punt(loc["rd_x"], loc["rd_y"]),
+                 rp.get("voorbereidingsbesluiten", [])):
+        for v in bron:
+            naam = (v.get("naam") or "").strip()
+            if naam and _kern(naam) not in kernen:
+                kernen.add(_kern(naam))
+                vbs.append({"naam": naam})
+    enkel = [b for b in rp.get("bestemmingen", []) if b.get("type") == "enkelbestemming"]
+    return {
+        "adres": adres, "locatie": loc, "voorbereidingsbesluiten": vbs,
+        "bestemming": ", ".join(dict.fromkeys(
+            b["naam"] for b in enkel if b.get("naam"))) or "-",
+        "maatvoeringen": rp.get("maatvoeringen", []),
+    }
+
+
 def _latin1(s: str) -> str:
     """Maak tekst geschikt voor de standaard-PDF-fonts (latin-1)."""
     repl = {"€": "EUR", "→": "->", "≥": ">=", "–": "-", "—": "-", "•": "-",

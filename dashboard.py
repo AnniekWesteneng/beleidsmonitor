@@ -292,8 +292,15 @@ def _analyseer_adres(adres):
     return res
 
 
-tab_signalen, tab_net, tab_adres, tab_chat = st.tabs(
-    ["📋 Signalen", "🔌 Netcongestie", "📍 Zoek op adres", "💬 Vraag de monitor"])
+@st.cache_data(ttl=1800, show_spinner=False)
+def _volg_check(adres):
+    from locatie_analyse import quick_check
+    return quick_check(adres)
+
+
+tab_signalen, tab_net, tab_adres, tab_volg, tab_chat = st.tabs(
+    ["📋 Signalen", "🔌 Netcongestie", "📍 Zoek op adres",
+     "🔔 Volglijst", "💬 Vraag de monitor"])
 
 # =========================== TAB 1: SIGNALEN ================================
 with tab_signalen:
@@ -544,6 +551,67 @@ with tab_adres:
                     st.markdown(f"{kl} **{indicator_label(r.indicator_id)}** — "
                                 f"{r.titel[:60]}")
                 st.caption("Zie het tabblad Signalen voor alle signalen + filters.")
+
+# ============================= TAB: VOLGLIJST ==============================
+with tab_volg:
+    import json as _json
+    VOLG_PAD = "volglijst.json"
+
+    def _laad_volg():
+        try:
+            return _json.load(open(VOLG_PAD, encoding="utf-8"))
+        except Exception:
+            return []
+
+    def _bewaar_volg(lijst):
+        try:
+            _json.dump(lijst, open(VOLG_PAD, "w", encoding="utf-8"),
+                       ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+    if "volglijst" not in st.session_state:
+        st.session_state.volglijst = _laad_volg()
+
+    st.caption("Zet adressen op je volglijst. Per adres zie je de bestemming en — als "
+               "melding — of er een voorbereidingsbesluit geldt. Werkt zonder AI-tegoed.")
+    c1, c2 = st.columns([4, 1])
+    nieuw = c1.text_input("Adres toevoegen", placeholder="bv. Atoomweg 50, Utrecht",
+                          label_visibility="collapsed")
+    if c2.button("Toevoegen", use_container_width=True) and nieuw.strip():
+        if nieuw.strip() not in st.session_state.volglijst:
+            st.session_state.volglijst.append(nieuw.strip())
+            _bewaar_volg(st.session_state.volglijst)
+        st.rerun()
+
+    if not st.session_state.volglijst:
+        st.info("Nog geen adressen op de volglijst. Voeg er hierboven een toe.")
+    for adr in list(st.session_state.volglijst):
+        with st.spinner(f"{adr} controleren…"):
+            qc = _volg_check(adr)
+        cols = st.columns([6, 1])
+        with cols[0]:
+            if qc.get("fout"):
+                st.markdown(f"**{adr}** — {qc['fout']}")
+            else:
+                vbs = qc.get("voorbereidingsbesluiten", [])
+                if vbs:
+                    st.warning(f"⚠️ **{adr}** — voorbereidingsbesluit van kracht: "
+                               + "; ".join(v["naam"] for v in vbs))
+                else:
+                    st.success(f"✅ **{adr}** — geen voorbereidingsbesluit")
+                maat = "; ".join(f"{m['naam']}={m['waarde']}"
+                                 for m in qc.get("maatvoeringen", []))
+                st.caption(f"Bestemming: {qc.get('bestemming', '-')}"
+                           + (f" · {maat}" if maat else ""))
+        if cols[1].button("Verwijder", key=f"del_{adr}", use_container_width=True):
+            st.session_state.volglijst.remove(adr)
+            _bewaar_volg(st.session_state.volglijst)
+            st.rerun()
+    st.caption("ℹ️ De volglijst wordt lokaal bewaard (volglijst.json). Online geldt een "
+               "toevoeging voor je sessie; permanente online-opslag + automatische "
+               "e-mail/Teams-meldingen zijn de vervolgstap.")
+
 
 def _chat_md(tekst: str) -> str:
     """Zet markdown-koppen (#, ##, …) om naar vetgedrukte regels, zodat een
