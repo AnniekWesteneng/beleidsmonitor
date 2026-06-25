@@ -1,0 +1,38 @@
+name: Volglijst-meldingen
+
+# Draait elke dag om 06:00 UTC, en handmatig via de "Run workflow"-knop.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # nodig om de bijgewerkte meldingen_state.json terug te committen
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Volglijst controleren en mailen
+        env:
+          DSO_PROD_API_KEY: ${{ secrets.DSO_PROD_API_KEY }}
+          RUIMTELIJKE_PLANNEN_API_KEY: ${{ secrets.RUIMTELIJKE_PLANNEN_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MELDING_VAN: ${{ secrets.MELDING_VAN }}
+          MELDING_NAAR: ${{ secrets.MELDING_NAAR }}
+        run: python meldingen.py
+      - name: Bijgewerkte toestand terug-committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add meldingen_state.json
+          git commit -m "Volglijst-meldingen: toestand bijgewerkt" || echo "geen wijziging"
+          git push || echo "push overgeslagen"
