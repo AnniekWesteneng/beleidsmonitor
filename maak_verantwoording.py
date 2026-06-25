@@ -239,8 +239,79 @@ bullet(doc, [
     "De netcongestie-gemeentekoppeling is op naam (vereenvoudiging); de officiële kaart is leidend.",
 ])
 
-# 9. Verantwoording AI-gebruik (volgens APA-richtlijn GenAI als onderzoekstool)
-kop(doc, "9. Verantwoording gebruik generatieve AI")
+# 9. Validatie van de classificatie
+kop(doc, "9. Validatie van de classificatie")
+para(doc, "De classificatie is op twee manieren getoetst: (a) een interne-consistentietoets die "
+          "nagaat of het indicatorenkader uniform en generiek wordt toegepast, en (b) een "
+          "zelf-gecodeerde steekproef die de accuratesse benadert. Beide kennen een belangrijke "
+          "beperking, die expliciet wordt benoemd.")
+
+kop(doc, "9.1 Interne consistentie (zelfde documenttype, zelfde oordeel)", 2)
+para(doc, "Voor terugkerende documenttypen is nagegaan of de tool ze in verschillende gemeenten "
+          "(casus- en niet-casusgemeenten) hetzelfde classificeert.")
+para(doc, "Voorbeeld 1 — netcongestie-raadsstukken (indicator 4):")
+tabel(doc, ["Gemeente", "Document", "Inhoud", "Oordeel"], [
+    ["'s-Hertogenbosch", "Update netcongestie", "wachtlijsten 5-10 jaar voor nieuwe aansluitingen", "ind. 4 / risico"],
+    ["Den Haag", "Herijking impactanalyse netcongestie", "netcongestie op alle netniveaus; projecten op wachtlijst", "ind. 4 / risico"],
+    ["Helmond", "RIB 153 Update netcongestie", "geen aansluitingen voor grootverbruikers tot minstens 2035", "ind. 4 / risico"],
+    ["Oss", "Raadsinformatiebrief netcongestie", "Enexis stopt per 1-7-2026 met nieuwe aansluitingen", "ind. 4 / risico"],
+    ["Gouda", "Memo raad netcongestie", "stop nieuwe grootverbruik-aanvragen bedrijventerrein Gouwespoor", "ind. 4 / risico"],
+    ["Flevoland", "Nadere regels Oplossingen voor bedrijven", "provincie subsidieert oplossingen voor netcongestie", "ind. 4 / kans"],
+], [3.2, 4.3, 6.5, 2.0])
+para(doc, "Zelfde type, consistent indicator 4 / risico. Flevoland wijkt af (kans) omdat het een "
+          "oplossing/subsidie biedt in plaats van het probleem te melden: het verschil is "
+          "inhoudsgedreven, niet gemeente-afhankelijk.")
+para(doc, "Voorbeeld 2 — 'voornemen tot uitgifte/verkoop van een perceel' (indicator 2):")
+tabel(doc, ["Gemeente", "Document", "Inhoud", "Oordeel"], [
+    ["Helmond", "Voornemen tot verkoop perceel", "1,55 ha voor bedrijfsuitbreiding", "ind. 2 / kans"],
+    ["Nieuwegein", "Verkoop kavel 19, Het Klooster", "onbebouwde kavel langs A27", "ind. 2 / kans"],
+    ["'s-Hertogenbosch", "Voorgenomen verkoop drie percelen", "grondverwerving bedrijventerrein De Brand II", "ind. 2 / kans"],
+    ["Dordrecht", "Voornemen tot uitgifte perceel", "Dordtse Kil beschikbaar voor bedrijvigheid", "ind. 2 / kans"],
+    ["Breda", "Voornemen tot verkoop gedeelte perceel", "deel kavel naar ambulancepost i.p.v. industrie", "ind. 2 / risico"],
+    ["Zoetermeer", "Voornemen grondverkoop Oostweg 2", "herontwikkeling naar gemengd gebruik", "ind. 2 / context"],
+], [3.2, 4.3, 6.5, 2.0])
+para(doc, "Hetzelfde documenttype krijgt een inhoudsgedreven oordeel: Breda wordt als enige risico "
+          "omdat de grond naar een niet-industriele functie gaat. Geen gemeente-bias.")
+para(doc, "Tegenproef — waar bedrijventerrein verdwijnt of krimpt, komt consistent risico uit:")
+tabel(doc, ["Gemeente", "Document", "Inhoud", "Oordeel"], [
+    ["Breda", "Radenbijeenkomst Baronie Bedrijventerreinen", "bedrijventerrein omzetten naar detailhandel verkleint aanbod", "ind. 2 / risico"],
+    ["Den Haag", "RIS325198 Functie-indeling/vlekkenplan", "grootschalige afvalvestiging op meerdere werkkavels", "ind. 2 / risico"],
+    ["Eindhoven", "Raadsvoorstel Wonen op Park Forum Zuid", "transformatie naar wonen; vervalt als bedrijventerrein", "ind. 2 / risico"],
+    ["Gouda", "Nota Grondbeleid", "teruglopende grondposities door transformatie en uitgifte", "ind. 2 / risico"],
+], [3.2, 4.3, 6.5, 2.0])
+para(doc, "Indicatorherkenning: alle tien indicatoren komen in alle gemeenten voor (ook buiten de "
+          "casus), en de verdeling weerspiegelt het gemeenteprofiel (Zoetermeer en Eindhoven hoog "
+          "op indicator 2; Utrecht hoog op indicator 1 en 10). De regels werken dus generiek, niet "
+          "overfit op de drie casusgemeenten. Nuance: het verband netcongestie -> indicator 4 is "
+          "hard aantoonbaar; het verband transformatie -> indicator 1 is op trefwoord gematcht en "
+          "daarom zachter.")
+para(doc, "Beslisregeltoepassing: de tool hanteert een uniform indicatorenkader voor elke gemeente; "
+          "er is geen ingebouwd gemeenteprofiel. De gemeentecontext komt uitsluitend binnen via de "
+          "documenttekst. Dat de uitkomst toch het gemeenteprofiel weerspiegelt, is een emergent, "
+          "inhoudsgedreven effect.")
+p = doc.add_paragraph()
+p.add_run("Kanttekening (zelfreferentie). ").bold = True
+p.add_run("Deze toets vergelijkt de tool met het eigen kader en bewijst daarom alleen interne "
+          "consistentie en generieke toepassing, niet dat de classificaties de werkelijkheid "
+          "correct weergeven. De externe validiteit komt uit de validatiegesprekken (deelvraag 4).")
+
+kop(doc, "9.2 Zelf-gecodeerde steekproef (accuratesse)", 2)
+para(doc, "Doel: de accuratesse benaderen door de tool-output onafhankelijk te vergelijken met het "
+          "vakinhoudelijke oordeel van de onderzoeker.")
+bullet(doc, [
+    ("Steekproef", "30 signalen aselect getrokken uit de volledige set (circa 6.000), gespreid over de gemeenten; vastgelegd in een codeerbestand."),
+    ("Eenheid", "het individuele signaal (document x indicator), met titel, samenvatting, onderbouwing en citaat."),
+    ("Criteria", "per signaal: (1) is de indicator juist, (2) is de classificatie juist (kans/risico/contextafhankelijk/niet-relevant), (3) is de relevantie passend."),
+    ("Procedure", "semi-blind: de onderzoeker noteert eerst het eigen oordeel en bekijkt daarna pas het oordeel van de tool."),
+    ("Maten", "percentage overeenstemming indicator, percentage overeenstemming classificatie, gemiddelde relevantie-afwijking, plus kwalitatieve analyse van de afwijkingen."),
+    ("Beperkingen", "kleine n (indicatief); een beoordelaar (geen inter-beoordelaarsbetrouwbaarheid); beoordeling op samenvatting i.p.v. volledige brontekst; en deels zelfreferentieel (onderzoeker en tool gebruiken hetzelfde kader)."),
+])
+para(doc, "Resultaat (in te vullen na codering): van de 30 signalen kende de onderzoeker in __% "
+          "dezelfde indicator en __% dezelfde classificatie toe; de afwijkingen volgden de "
+          "patronen: ____.")
+
+# 10. Verantwoording AI-gebruik (volgens APA-richtlijn GenAI als onderzoekstool)
+kop(doc, "10. Verantwoording gebruik generatieve AI")
 para(doc, "Generatieve AI is in dit onderzoek gebruikt als onderzoekstool voor de bouw van de "
           "softwareprototype. Conform de APA-richtlijn voor generatieve AI worden hieronder de "
           "tool, de input en de output beschreven.")
@@ -251,7 +322,7 @@ p.add_run("Voor de ontwikkeling is gebruikgemaakt van ")
 p.add_run("Claude Code").italic = True
 p.add_run(" (Anthropic, 2026), een generatieve-AI-assistent voor softwareontwikkeling "
           "(aangedreven door het model Claude Opus 4.8). De classificatie binnen de applicatie "
-          "gebruikt het model Claude Sonnet 4.6.")
+          "gebruikt het lichtere, kostenefficiente model Claude Haiku 4.5.")
 
 p = doc.add_paragraph()
 p.add_run("Input. ").bold = True
@@ -269,7 +340,7 @@ p.add_run("De programmacode van de applicatie (Python/Streamlit). Aangezien de o
           "beoordeling. De beperkingen zijn in hoofdstuk 8 benoemd. Ik begrijp de werking van de "
           "applicatie en kan deze toelichten en verantwoorden.")
 
-kop(doc, "10. Reproductie (kort)")
+kop(doc, "11. Reproductie (kort)")
 para(doc, "1) virtuele omgeving aanmaken en packages installeren; 2) API-sleutel in .env zetten; "
           "3) data verzamelen met de pipeline; 4) dashboard tonen met Streamlit. De exacte "
           "commando's en code staan in het technische stappenplan (STAPPENPLAN.md).")
