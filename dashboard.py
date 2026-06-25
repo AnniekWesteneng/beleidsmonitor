@@ -436,18 +436,25 @@ with tab_adres:
                 st.info(f"⚪ **Onvoldoende planologische gegevens op dit punt** — {_kern} "
                         "Probeer een exacter adres (met huisnummer) of bekijk de bron.")
             _pr = res.get("planregels") or {}
+            from locatie_analyse import vb_relevant as _vbrel
             _vbs = res.get("voorbereidingsbesluiten", [])
-            for _v in _vbs:
+            _vb_rel = [v for v in _vbs if _vbrel(v.get("naam", ""))]
+            _vb_ov = [v for v in _vbs if not _vbrel(v.get("naam", ""))]
+            for _v in _vb_rel:
                 st.warning(f"⚠️ **Voorbereidingsbesluit van kracht** — {_v.get('naam')}")
             # Actualiteits-check via DSO: is de planologie hier in beweging?
-            if _vbs:
-                st.caption("🔎 DSO-actualiteitscheck: er loopt een voorbereidingsbesluit "
-                           "— de onderstaande bestemmingsplan-waarden kunnen worden "
-                           "gewijzigd. Bekijk de actuele/leidende regels via de knop onderaan.")
+            if _vb_rel:
+                st.caption("🔎 DSO-actualiteitscheck: er loopt een (voor industrieel "
+                           "vastgoed relevant) voorbereidingsbesluit — de bestemmingsplan-"
+                           "waarden kunnen wijzigen. Bekijk de leidende regels via de knop onderaan.")
             else:
-                st.caption("🔎 DSO-actualiteitscheck: geen voorbereidingsbesluit op dit "
-                           "punt — de bestemmingsplan-waarden zijn naar verwachting "
+                st.caption("🔎 DSO-actualiteitscheck: geen relevant voorbereidingsbesluit "
+                           "op dit punt — de bestemmingsplan-waarden zijn naar verwachting "
                            "actueel. 'Regels op de kaart' blijft leidend.")
+            if _vb_ov:
+                st.caption("Overige voorbereidingsbesluiten op deze locatie (onderwerp-"
+                           "specifiek, vermoedelijk niet relevant): "
+                           + ", ".join(v.get("naam", "") for v in _vb_ov))
 
             # Harde planologische feiten op dit punt (Ruimtelijke Plannen).
             _best = _pr.get("bestemmingen", [])
@@ -594,16 +601,21 @@ with tab_volg:
             if qc.get("fout"):
                 st.markdown(f"**{adr}** — {qc['fout']}")
             else:
+                from locatie_analyse import vb_relevant as _vbrel
                 vbs = qc.get("voorbereidingsbesluiten", [])
-                if vbs:
+                vb_rel = [v for v in vbs if _vbrel(v.get("naam", ""))]
+                vb_ov = [v for v in vbs if not _vbrel(v.get("naam", ""))]
+                if vb_rel:
                     st.warning(f"⚠️ **{adr}** — voorbereidingsbesluit van kracht: "
-                               + "; ".join(v["naam"] for v in vbs))
+                               + "; ".join(v["naam"] for v in vb_rel))
                 else:
-                    st.success(f"✅ **{adr}** — geen voorbereidingsbesluit")
+                    st.success(f"✅ **{adr}** — geen relevant voorbereidingsbesluit")
                 maat = "; ".join(f"{m['naam']}={m['waarde']}"
                                  for m in qc.get("maatvoeringen", []))
                 st.caption(f"Bestemming: {qc.get('bestemming', '-')}"
-                           + (f" · {maat}" if maat else ""))
+                           + (f" · {maat}" if maat else "")
+                           + (f" · overige VB's: {', '.join(v['naam'] for v in vb_ov)}"
+                              if vb_ov else ""))
         if cols[1].button("Verwijder", key=f"del_{adr}", use_container_width=True):
             st.session_state.volglijst.remove(adr)
             _bewaar_volg(st.session_state.volglijst)

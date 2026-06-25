@@ -148,6 +148,23 @@ def analyseer_adres(adres: str) -> dict:
             "voorbereidingsbesluiten": vb, "duiding": duiding}
 
 
+_VB_RELEVANT = (
+    "bedrijventerrein", "bedrijvenpark", "bedrijfsterrein", "werklocatie",
+    "werkgebied", "industrie", "industrieel", "logistiek", "datacenter",
+    "datacentra", "milieucategorie", "milieuzonering", "transformatie",
+    "herontwikkeling", "herstructurering", "haven", "bedrijfsunit",
+    "verzamelgebouw", "kantoor", "bedrijf",
+)
+
+
+def vb_relevant(naam: str) -> bool:
+    """Grove inschatting of een voorbereidingsbesluit relevant is voor industrieel/
+    logistiek vastgoed, op basis van trefwoorden in de naam. Onderwerp-specifieke
+    besluiten (tabakszaken, hotels, darkstores, geitenhouderijen, ...) vallen af."""
+    n = (naam or "").lower()
+    return any(k in n for k in _VB_RELEVANT)
+
+
 def quick_check(adres: str) -> dict:
     """Lichte check voor de volglijst — GEEN AI/Anthropic (werkt dus ook bij
     bereikte API-limiet): bestemming, maatvoering en voorbereidingsbesluit(en)."""

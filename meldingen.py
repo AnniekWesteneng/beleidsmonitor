@@ -13,7 +13,7 @@ import os
 import smtplib
 from email.message import EmailMessage
 
-from locatie_analyse import quick_check
+from locatie_analyse import quick_check, vb_relevant
 
 VOLG_PAD = "volglijst.json"
 STATE_PAD = "meldingen_state.json"
@@ -35,7 +35,9 @@ def _bewaar(pad, data):
 def _signatuur(qc: dict) -> dict:
     """Vergelijkbare 'toestand' van een adres."""
     return {
-        "vb": sorted(v["naam"] for v in qc.get("voorbereidingsbesluiten", [])),
+        # Alleen voor industrieel vastgoed relevante voorbereidingsbesluiten meetellen.
+        "vb": sorted(v["naam"] for v in qc.get("voorbereidingsbesluiten", [])
+                     if vb_relevant(v["naam"])),
         "bestemming": qc.get("bestemming", ""),
     }
 
