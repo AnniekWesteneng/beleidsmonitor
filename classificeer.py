@@ -13,7 +13,8 @@ from verwerk import maak_fragment
 
 load_dotenv()
 
-GELDIGE_KLASSEN = {"kans", "risico", "contextafhankelijk"}
+GELDIGE_KLASSEN = {"kans", "risico", "contextafhankelijk", "niet-relevant"}
+GELDIGE_STATUS = {"ambitie", "voornemen", "besluit", "bindend"}
 
 # Model komt uit config (CLASSIFICATIE_MODEL); standaard Haiku (goedkoop).
 MODEL = CLASSIFICATIE_MODEL
@@ -49,6 +50,11 @@ DEFINITIES:
   algemeen of positief klinkende vermelding.
 - RISICO: beperkt, vertraagt of maakt onzeker.
 - CONTEXTAFHANKELIJK: hangt af van type vastgoed (Layers-concept = milieucategorie 3.2) en locatie.
+- NIET-RELEVANT: raakt de ontwikkelmogelijkheden voor Today niet wezenlijk. Gebruik dit
+  (i.p.v. kans/risico, met lage relevantie) bij o.a.: een reeds verkocht/vergeven perceel,
+  een vergunning voor een ÁNDER (niet-Today) gebouw of project, een algemeen handboek of
+  procedurebeschrijving, een niet-bindende aanbeveling, of een stuk dat inhoudelijk over een
+  andere gemeente/regio gaat.
 
 WANNEER IS IETS GÉÉN KANS — wees hier streng. Label dan contextafhankelijk, of laat
 het signaal weg als het niet werkelijk relevant is:
@@ -76,6 +82,14 @@ komt. Gaat de vrijkomende ruimte naar WONINGBOUW, dan is dit signaal NIET RELEVA
 voor Today — neem het dan niet op. Is het onduidelijk wat er met de grond gebeurt:
 contextafhankelijk en lagere relevantie.
 
+MARKTPARTIJ-PERSPECTIEF — Today is een private marktpartij:
+- Een positie van de OVERHEID die grond aan de markt onttrekt (gemeentelijke aankoop,
+  vestiging voorkeursrecht/Wvg, strategische grondbank) = RISICO/aandachtspunt voor Today,
+  GEEN kans — de grond is dan immers niet meer vrij voor Today.
+- Een aankoop, positie of vergunningaanvraag van een ÁNDERE (private) partij = een
+  concurrentiesignaal: classificeer als risico of contextafhankelijk, NOOIT als kans, en
+  benoem in het veld "eigenaar" wie de positie heeft.
+
 BELANGRIJKE NUANCES:
 - Netcongestie (indicator 4) valt grotendeels buiten gemeentelijk beleid (netbeheerders Liander/Stedin).
 - Herstructurering met behoud werkbestemming = kans; transformatie naar wonen = risico.
@@ -83,6 +97,10 @@ BELANGRIJKE NUANCES:
   agrarisch, bv. veehouderij, of milieubelastend) = KANS als die grond voor
   industrie/logistiek benut/bestemd wordt; gaat het naar woningbouw dan is het NIET
   RELEVANT (niet opnemen); is het onbekend = contextafhankelijk.
+- Indicator 8 (functieverruiming) = verruiming van toegestane functies MET behoud van de
+  werkfunctie → kans of contextafhankelijk, NOOIT risico. Een functiewijziging die de
+  werkfunctie wegneemt (naar wonen/gemengd) is GEEN functieverruiming maar transformatiedruk
+  → gebruik dan indicator 1, niet indicator 8.
 
 BELANGRIJK — één document kan MEERDERE indicatoren raken. Een visie op werklocaties
 kan bijvoorbeeld tegelijk indicator 2 (beschikbaarheid), 8 (functieverruiming) en
@@ -95,9 +113,18 @@ Voeg per signaal een "citaat" toe: een KORT, LETTERLIJK overgenomen fragment
 vindplaats in het document terug te zoeken is. Neem het exact over (niet
 parafraseren). Laat leeg als er geen passende passage is.
 
+Voeg per signaal ook drie context-velden toe:
+- "status": de juridische hardheid — één van: "ambitie", "voornemen", "besluit", "bindend".
+  Een beleidsambitie of -voornemen is nog GEEN genomen of bindend besluit; weeg dit mee in
+  de relevantie.
+- "eigenaar": wie heeft de positie of het initiatief (bv. "gemeente", "provincie", "Rijk",
+  "private partij" of een genoemde naam). Leeg laten als onbekend.
+- "grondpositie": welk perceel of welke locatie het betreft (bv. straat/kavel/gebied).
+  Leeg laten als onbekend.
+
 Antwoord UITSLUITEND met JSON, geen extra tekst. Per relevant signaal één object:
 {{"signalen": [
-  {{"indicator_id": <1-10>, "classificatie": "kans"/"risico"/"contextafhankelijk", "relevantie": <1-5>, "samenvatting": "<1-2 zinnen>", "onderbouwing": "<waarom>", "citaat": "<kort letterlijk fragment uit de tekst>"}}
+  {{"indicator_id": <1-10>, "classificatie": "kans"/"risico"/"contextafhankelijk"/"niet-relevant", "relevantie": <1-5>, "status": "ambitie"/"voornemen"/"besluit"/"bindend", "eigenaar": "<wie heeft de positie>", "grondpositie": "<perceel/locatie>", "samenvatting": "<1-2 zinnen>", "onderbouwing": "<waarom>", "citaat": "<kort letterlijk fragment uit de tekst>"}}
 ]}}"""
 
 
@@ -132,10 +159,15 @@ def _schoon_signaal(s: dict) -> dict | None:
         relevantie = relevantie if 1 <= relevantie <= 5 else None
     except (TypeError, ValueError):
         relevantie = None
+    status = (s.get("status") or "").strip().lower()
+    status = status if status in GELDIGE_STATUS else ""
     return {
         "indicator_id": indicator_id,
         "classificatie": classificatie,
         "relevantie": relevantie,
+        "status": status,
+        "eigenaar": (s.get("eigenaar") or "").strip(),
+        "grondpositie": (s.get("grondpositie") or "").strip(),
         "samenvatting": (s.get("samenvatting") or "").strip(),
         "onderbouwing": (s.get("onderbouwing") or "").strip(),
         "citaat": (s.get("citaat") or "").strip(),
