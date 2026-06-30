@@ -94,6 +94,23 @@ def geocode_adres(adres: str) -> dict | None:
     }
 
 
+SUGGEST = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/suggest"
+
+
+def suggest_adres(q: str, rows: int = 6) -> list[str]:
+    """Adres-suggesties (PDOK) voor automatische aanvulling. Geeft een lijst
+    weergavenamen terug; lege lijst bij geen treffer of fout."""
+    if not q or len(q.strip()) < 3:
+        return []
+    try:
+        r = requests.get(SUGGEST, params={"q": q, "rows": rows, "fq": "type:adres"},
+                         headers=UA, timeout=10)
+        docs = r.json().get("response", {}).get("docs", [])
+        return [d.get("weergavenaam") for d in docs if d.get("weergavenaam")]
+    except Exception:
+        return []
+
+
 def _headers() -> dict:
     return {"x-api-key": _key(), "Accept": "application/hal+json",
             "Content-Type": "application/json",

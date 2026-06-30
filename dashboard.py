@@ -305,6 +305,12 @@ def _volg_check(adres):
     return quick_check(adres)
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def _suggest_adres(q):
+    from bronnen.omgevingsloket import suggest_adres
+    return suggest_adres(q)
+
+
 tab_signalen, tab_net, tab_adres, tab_volg, tab_chat = st.tabs(
     ["📋 Signalen", "🔌 Netcongestie", "📍 Zoek op adres",
      "🔔 Volglijst", "💬 Vraag de monitor"])
@@ -416,8 +422,14 @@ with tab_adres:
                 "voor industrieel vastgoed.")
     st.caption("Regels uit het Omgevingsloket/Ruimtelijke Plannen; de duiding is een "
                "AI-interpretatie, het omgevingsplan blijft leidend.")
-    adres = st.text_input("Adres", placeholder="bv. Atoomweg 50, Utrecht",
-                          label_visibility="collapsed")
+    _q = st.text_input("Adres", placeholder="bv. Atoomweg 50, Utrecht",
+                       label_visibility="collapsed")
+    adres = _q.strip()
+    if adres:
+        # Automatische aanvulling: toon adres-suggesties en laat de juiste kiezen.
+        _sugg = _suggest_adres(_q)
+        if _sugg:
+            adres = st.selectbox("Kies het juiste adres", _sugg, index=0)
     if adres:
         with st.spinner("Adres opzoeken, DSO bevragen en analyseren…"):
             res = _analyseer_adres(adres)
