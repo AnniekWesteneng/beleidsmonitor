@@ -422,14 +422,20 @@ with tab_adres:
                 "voor industrieel vastgoed.")
     st.caption("Regels uit het Omgevingsloket/Ruimtelijke Plannen; de duiding is een "
                "AI-interpretatie, het omgevingsplan blijft leidend.")
-    _q = st.text_input("Adres", placeholder="bv. Atoomweg 50, Utrecht",
-                       label_visibility="collapsed")
-    adres = _q.strip()
-    if adres:
-        # Automatische aanvulling: toon adres-suggesties en laat de juiste kiezen.
-        _sugg = _suggest_adres(_q)
-        if _sugg:
-            adres = st.selectbox("Kies het juiste adres", _sugg, index=0)
+    # Live automatische aanvulling via een typeahead-component; valt terug op een
+    # gewoon veld + suggestielijst als het component (nog) niet beschikbaar is.
+    adres = None
+    try:
+        from streamlit_searchbox import st_searchbox
+        adres = st_searchbox(_suggest_adres, placeholder="bv. Atoomweg 50, Utrecht",
+                             key="adres_searchbox")
+    except Exception:
+        _q = st.text_input("Adres", placeholder="bv. Atoomweg 50, Utrecht",
+                           label_visibility="collapsed")
+        if _q.strip():
+            _sugg = _suggest_adres(_q.strip())
+            adres = (st.selectbox("Kies het juiste adres", _sugg, index=0)
+                     if _sugg else _q.strip())
     if adres:
         with st.spinner("Adres opzoeken, DSO bevragen en analyseren…"):
             res = _analyseer_adres(adres)

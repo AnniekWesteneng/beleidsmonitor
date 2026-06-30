@@ -7,3 +7,4 @@ pandas
 lxml
 pypdf
 fpdf2
+streamlit-searchbox
