@@ -220,6 +220,12 @@ with st.sidebar:
     gem = st.multiselect("Gemeente", gem_opties, placeholder="alle", key="f_gem",
                          on_change=_sync_provincie) or gem_opties
     cls = st.multiselect("Classificatie", ALLE_CLS, placeholder="alle") or ALLE_CLS
+    toon_nr = st.checkbox(
+        "Toon ook niet-relevante", value=False,
+        help="Standaard verborgen: bv. een reeds verkocht perceel, een vergunning voor "
+             "een ander pand, een algemeen handboek of een niet-bindende aanbeveling.")
+    if toon_nr:
+        cls = list(cls) + ["niet-relevant"]
 
     aantal_per_ind = df.indicator_id.dropna().astype(int).value_counts().to_dict()
     ind_opties = {f"{indicator_label(i['id'])}  ({aantal_per_ind.get(i['id'], 0)})": i["id"]
@@ -263,7 +269,8 @@ if van and tot:
 
 filtered = df[mask]
 
-kleuren = {"kans": "🟢", "risico": "🔴", "contextafhankelijk": "🟠"}
+kleuren = {"kans": "🟢", "risico": "🔴", "contextafhankelijk": "🟠",
+           "niet-relevant": "⚪"}
 
 
 def _netcongestie(gemeenten_tuple):
@@ -337,15 +344,24 @@ with tab_signalen:
             rijen = doc_groepen[doc["_doc"]].sort_values(
                 "relevantie", ascending=False, na_position="last")
             eerste = rijen.iloc[0]
-            dots = "".join(dict.fromkeys(kleuren.get(c, "⚪") for c in rijen.classificatie))
+            dot = kleuren.get(eerste.classificatie, "○")
             sterren = relevantie_sterren(doc["max_rel"])
-            with st.expander(f"{dots} {sterren} {eerste.titel} — {eerste.gemeente}"):
+            with st.expander(f"{dot} {sterren} {eerste.titel} — {eerste.gemeente}"):
                 st.caption(f"{eerste.documenttype} · {eerste.datum} · {eerste.bron} "
                            f"· {len(rijen)} signaal/signalen")
                 for _, r in rijen.iterrows():
-                    kleur = kleuren.get(r.classificatie, "⚪")
+                    kleur = kleuren.get(r.classificatie, "○")
                     st.markdown(f"{kleur} **{indicator_label(r.indicator_id)}** — "
                                 f"{r.classificatie or '–'} · {relevantie_sterren(r.relevantie)}")
+                    # Context-velden: juridische status, eigenaar, grondpositie.
+                    _meta = []
+                    for _lab, _k in [("status", "status"), ("eigenaar", "eigenaar"),
+                                     ("perceel", "grondpositie")]:
+                        _v = r.get(_k) if _k in rijen.columns else None
+                        if pd.notna(_v) and str(_v).strip():
+                            _meta.append(f"{_lab}: {str(_v).strip()}")
+                    if _meta:
+                        st.caption(" · ".join(_meta))
                     if r.samenvatting:
                         st.write(r.samenvatting)
                     if r.onderbouwing:
