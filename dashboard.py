@@ -428,7 +428,7 @@ with tab_adres:
     try:
         from streamlit_searchbox import st_searchbox
         adres = st_searchbox(_suggest_adres, placeholder="bv. Atoomweg 50, Utrecht",
-                             key="adres_searchbox")
+                             debounce=350, rerun_scope="fragment", key="adres_searchbox")
     except Exception:
         _q = st.text_input("Adres", placeholder="bv. Atoomweg 50, Utrecht",
                            label_visibility="collapsed")
