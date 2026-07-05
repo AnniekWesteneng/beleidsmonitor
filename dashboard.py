@@ -595,24 +595,20 @@ with tab_adres:
 
 # ============================= TAB: VOLGLIJST ==============================
 with tab_volg:
-    import json as _json
-    VOLG_PAD = "volglijst.json"
-
-    def _laad_volg():
-        try:
-            return _json.load(open(VOLG_PAD, encoding="utf-8"))
-        except Exception:
-            return []
-
-    def _bewaar_volg(lijst):
-        try:
-            _json.dump(lijst, open(VOLG_PAD, "w", encoding="utf-8"),
-                       ensure_ascii=False, indent=2)
-        except Exception:
-            pass
+    import volglijst_opslag as _vo
 
     if "volglijst" not in st.session_state:
-        st.session_state.volglijst = _laad_volg()
+        st.session_state.volglijst = _vo.lees_volglijst()
+
+    def _bewaar_volg(lijst):
+        status = _vo.schrijf_volglijst(lijst)
+        if status == "github":
+            st.toast("Volglijst opgeslagen — ook de meldingen gebruiken deze lijst.")
+        elif status == "lokaal":
+            st.toast("Alleen lokaal opgeslagen. Stel GITHUB_TOKEN in voor "
+                     "permanente opslag + meldingen.")
+        else:
+            st.toast("Opslaan naar GitHub mislukt — controleer de GITHUB_TOKEN.")
 
     st.caption("Zet adressen op je volglijst. Per adres zie je de bestemming en — als "
                "melding — of er een voorbereidingsbesluit geldt. Werkt zonder AI-tegoed.")
@@ -654,9 +650,14 @@ with tab_volg:
             st.session_state.volglijst.remove(adr)
             _bewaar_volg(st.session_state.volglijst)
             st.rerun()
-    st.caption("ℹ️ De volglijst wordt lokaal bewaard (volglijst.json). Online geldt een "
-               "toevoeging voor je sessie; permanente online-opslag + automatische "
-               "e-mail/Teams-meldingen zijn de vervolgstap.")
+    if _vo.heeft_token():
+        st.caption("ℹ️ De volglijst wordt permanent bewaard in de projectopslag (GitHub) "
+                   "en gebruikt door de automatische e-mailmeldingen. Wat je hier "
+                   "toevoegt, wordt dus ook echt bewaakt.")
+    else:
+        st.caption("ℹ️ De volglijst wordt nu alleen lokaal bewaard. Stel een GITHUB_TOKEN "
+                   "in de secrets in om 'm permanent op te slaan én te koppelen aan de "
+                   "automatische meldingen.")
 
 
 def _chat_md(tekst: str) -> str:
