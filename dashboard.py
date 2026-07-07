@@ -135,6 +135,13 @@ st.markdown(f"""
     background: {BRAND['licht']}; border-radius: 10px; padding: 14px 16px;
     border-left: 4px solid {BRAND['accent']};
   }}
+  /* Streamlit-randjes verbergen voor een strak beeld (menu, voettekst, beheer-toolbar) */
+  #MainMenu {{ visibility: hidden; }}
+  footer {{ visibility: hidden; }}
+  [data-testid="stToolbar"] {{ display: none !important; }}
+  [data-testid="stStatusWidget"] {{ display: none !important; }}
+  [data-testid="stDecoration"] {{ display: none !important; }}
+  .stAppDeployButton, [data-testid="manage-app-button"] {{ display: none !important; }}
 </style>
 <div class="td-header">
   <div>{_logo_html()}</div>
