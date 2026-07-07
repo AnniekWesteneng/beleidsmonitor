@@ -338,10 +338,6 @@ with tab_signalen:
 
         # Niet eindeloos veel kaarten renderen (dat maakt de pagina traag).
         LIMIET = 150
-        totaal_docs = len(agg)
-        st.caption(f"{totaal_docs} documenten · {len(filtered)} signalen"
-                   + (f" — toont de eerste {LIMIET}; verfijn de filters voor de rest."
-                      if totaal_docs > LIMIET else ""))
         # Eén keer groeperen (i.p.v. de hele tabel per document opnieuw doorzoeken).
         doc_groepen = {k: v for k, v in filtered.groupby("_doc")}
 
