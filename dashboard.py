@@ -624,6 +624,23 @@ with tab_volg:
             _bewaar_volg(st.session_state.volglijst)
         st.rerun()
 
+    # In-dashboard melding: samenvatting van actieve voorbereidingsbesluiten
+    if st.session_state.volglijst:
+        from locatie_analyse import vb_relevant as _vbrel0
+        _met_vb = []
+        for _a in st.session_state.volglijst:
+            _q = _volg_check(_a)
+            if not _q.get("fout") and any(_vbrel0(v.get("naam", ""))
+                                          for v in _q.get("voorbereidingsbesluiten", [])):
+                _met_vb.append(_a)
+        _n = len(st.session_state.volglijst)
+        if _met_vb:
+            st.warning(f"⚠️ Melding: {len(_met_vb)} van je {_n} volglijst-adres(sen) heeft een "
+                       f"actief voorbereidingsbesluit — {', '.join(_met_vb)}.")
+        else:
+            st.success(f"✅ Geen van je {_n} volglijst-adres(sen) heeft een actief "
+                       f"voorbereidingsbesluit.")
+
     if not st.session_state.volglijst:
         st.info("Nog geen adressen op de volglijst. Voeg er hierboven een toe.")
     for adr in list(st.session_state.volglijst):
