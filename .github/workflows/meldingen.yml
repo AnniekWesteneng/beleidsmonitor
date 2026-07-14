@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write   # nodig om de bijgewerkte meldingen_state.json terug te committen
+  issues: write     # nodig om een melding-issue aan te maken (GitHub mailt die automatisch)
 
 jobs:
   check:
@@ -18,10 +19,15 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - name: Volglijst controleren en mailen
+      - name: Volglijst controleren en melden
         env:
           DSO_PROD_API_KEY: ${{ secrets.DSO_PROD_API_KEY }}
           RUIMTELIJKE_PLANNEN_API_KEY: ${{ secrets.RUIMTELIJKE_PLANNEN_API_KEY }}
+          # Melding via een GitHub-issue (GitHub mailt die automatisch naar je
+          # ingestelde notificatie-adres) — geen wachtwoord/SMTP nodig.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          # Optioneel: SMTP blijft werken als je die secrets ooit invult.
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}

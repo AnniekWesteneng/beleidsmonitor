@@ -13,6 +13,8 @@ import os
 import smtplib
 from email.message import EmailMessage
 
+import requests
+
 from locatie_analyse import quick_check, vb_relevant
 
 VOLG_PAD = "volglijst.json"
@@ -53,12 +55,36 @@ def _verschillen(oud: dict, nieuw: dict) -> list[str]:
     return meld
 
 
-def _verstuur_mail(onderwerp: str, tekst: str):
+def _maak_issue(onderwerp: str, tekst: str) -> bool:
+    """Maak een melding-issue in de repo. GitHub mailt dit automatisch naar je
+    ingestelde notificatie-adres — geen wachtwoord/SMTP nodig.
+    Werkt in GitHub Actions (GH_TOKEN + GH_REPO staan dan in de omgeving)."""
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    repo = os.environ.get("GH_REPO") or os.environ.get("GITHUB_REPOSITORY")
+    if not token or not repo:
+        return False
+    try:
+        r = requests.post(
+            f"https://api.github.com/repos/{repo}/issues",
+            headers={"Authorization": f"Bearer {token}",
+                     "Accept": "application/vnd.github+json",
+                     "X-GitHub-Api-Version": "2022-11-28"},
+            json={"title": onderwerp, "body": tekst, "labels": ["volglijst-melding"]},
+            timeout=20,
+        )
+        ok = r.status_code == 201
+        print("Melding-issue aangemaakt" if ok else f"Issue aanmaken faalde: {r.status_code}")
+        return ok
+    except Exception as e:
+        print("Issue aanmaken fout:", e)
+        return False
+
+
+def _verstuur_mail(onderwerp: str, tekst: str) -> bool:
     host = os.environ.get("SMTP_HOST")
     naar = os.environ.get("MELDING_NAAR")
     if not host or not naar:
-        print("Geen SMTP_HOST/MELDING_NAAR ingesteld — mail overgeslagen.\n\n" + tekst)
-        return
+        return False
     msg = EmailMessage()
     msg["Subject"] = onderwerp
     msg["From"] = os.environ.get("MELDING_VAN") or os.environ.get("SMTP_USER", "")
@@ -69,6 +95,7 @@ def _verstuur_mail(onderwerp: str, tekst: str):
         s.login(os.environ["SMTP_USER"], os.environ["SMTP_PASS"])
         s.send_message(msg)
     print("E-mail verstuurd naar", naar)
+    return True
 
 
 def main():
@@ -96,8 +123,12 @@ def main():
         for adr, diff in meldingen:
             tekst += f"- {adr}\n" + "".join(f"    * {d}\n" for d in diff) + "\n"
         tekst += ("\nBekijk de details in het dashboard of via 'Regels op de kaart'.")
-        _verstuur_mail(f"Beleidsmonitor: {len(meldingen)} wijziging(en) op je volglijst",
-                       tekst)
+        onderwerp = f"Beleidsmonitor: {len(meldingen)} wijziging(en) op je volglijst"
+        verzonden = False
+        verzonden = _maak_issue(onderwerp, tekst) or verzonden      # GitHub-issue -> auto-mail
+        verzonden = _verstuur_mail(onderwerp, tekst) or verzonden   # optioneel via SMTP
+        if not verzonden:
+            print("Geen meldingskanaal ingesteld — melding alleen geprint:")
         print(tekst)
     else:
         print(f"Geen wijzigingen ({len(adressen)} adressen gecontroleerd).")
